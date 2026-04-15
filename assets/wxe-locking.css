@@ -1,0 +1,212 @@
+/**
+ * Zero WPML × Etch - Locking Styles
+ *
+ * This file contains all premium feature locking styles.
+ * Remove this file completely for free distribution.
+ *
+ * @package WpmlXEtch
+ */
+
+/* ── Search toggle locking ──────────────────────────────────────────────── */
+.wxe-search-toggle--locked {
+    cursor: default;
+    pointer-events: auto;
+}
+
+.wxe-search-toggle--locked:hover svg.wxe-search-toggle-magnifier {
+    display: none;
+}
+
+.wxe-search-toggle--locked svg.wxe-search-toggle-lock {
+    display: none;
+}
+
+.wxe-search-toggle--locked:hover svg.wxe-search-toggle-lock {
+    display: inline-flex;
+    color: var(--wxe-text-color-muted);
+}
+
+/* ── Pill locking ───────────────────────────────────────────────────────── */
+.wxe-pill--locked,
+.wxe-context-chip--locked {
+    position: relative;
+}
+
+.wxe-pill--locked {
+    opacity: var(--wxe-lock-opacity-pill);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.wxe-pill--locked:hover {
+    opacity: calc(var(--wxe-lock-opacity-pill) + 0.15);
+}
+
+.wxe-pill--locked .wxe-pill-lock,
+.wxe-context-chip--locked .wxe-pill-lock {
+    display: inline-block !important;
+    margin-left: var(--wxe-space-xs);
+    vertical-align: middle;
+    opacity: 1 !important;
+}
+
+.wxe-pill-lock {
+    display: inline-block;
+    flex-shrink: 0;
+    pointer-events: none;
+    color: currentColor;
+    width: var(--wxe-lock-icon-size);
+    height: var(--wxe-lock-icon-size);
+}
+
+/* ── Context chip locking ───────────────────────────────────────────────── */
+.wxe-context-chip--locked {
+    cursor: default !important;
+    position: relative;
+}
+
+.wxe-context-chip--locked .wxe-context-chip-title {
+    transition: opacity var(--wxe-transition-default);
+}
+
+.wxe-context-chip--locked .wxe-context-lock {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--wxe-text-color-muted);
+    opacity: 0;
+    transition: opacity var(--wxe-transition-default);
+    pointer-events: none;
+}
+
+.wxe-context-chip--locked:hover .wxe-context-chip-title {
+    opacity: 0;
+}
+
+.wxe-context-chip--locked:hover .wxe-context-lock {
+    opacity: 1;
+}
+
+/* ── Filter list locking (header + chips as one block) ─────────────────── */
+.wxe-filter-list--locked {
+    opacity: var(--wxe-lock-opacity-filter);
+    position: relative;
+    user-select: none;
+    -webkit-filter: var(--wxe-lock-grayscale);
+    filter: var(--wxe-lock-grayscale);
+    cursor: pointer;
+}
+
+.wxe-filter-list--locked > * {
+    pointer-events: none !important;
+    transition: opacity var(--wxe-transition-default);
+}
+
+.wxe-filter-list--locked .wxe-lock-overlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--wxe-text-color-muted);
+    opacity: 0;
+    transition: opacity var(--wxe-transition-default);
+    pointer-events: none;
+}
+
+.wxe-filter-list--locked:hover > *:not(.wxe-lock-overlay) {
+    opacity: 0;
+}
+
+.wxe-filter-list--locked:hover .wxe-lock-overlay {
+    opacity: 1;
+}
+
+/* ── Quick WPML Access footer locking ──────────────────────────────────── */
+.wxe-sidebar-footer--locked {
+    opacity: var(--wxe-lock-opacity-footer);
+    position: relative;
+    user-select: none;
+    -webkit-filter: var(--wxe-lock-grayscale);
+    filter: var(--wxe-lock-grayscale);
+    cursor: pointer;
+}
+
+.wxe-sidebar-footer--locked > * {
+    transition: opacity var(--wxe-transition-default);
+}
+
+.wxe-sidebar-footer--locked .wxe-lock-overlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--wxe-text-color-muted);
+    opacity: 0;
+    transition: opacity var(--wxe-transition-default);
+    pointer-events: none;
+}
+
+.wxe-sidebar-footer--locked:hover > *:not(.wxe-lock-overlay) {
+    opacity: 0;
+}
+
+.wxe-sidebar-footer--locked:hover .wxe-lock-overlay {
+    opacity: 1;
+}
+
+.wxe-sidebar-footer--locked .content-hub-list__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wxe-sidebar-footer--locked .content-hub-list__header .wxe-sidebar-lock {
+    margin-left: auto;
+}
+
+/* ── AI Translation section locking ────────────────────────────────────── */
+.wxe-ai-settings-section--locked {
+    opacity: var(--wxe-lock-opacity-filter);
+    position: relative;
+    user-select: none;
+    -webkit-filter: var(--wxe-lock-grayscale);
+    filter: var(--wxe-lock-grayscale);
+    cursor: pointer;
+}
+
+.wxe-ai-settings-section--locked > *:not(.wxe-lock-overlay) {
+    pointer-events: none;
+    transition: opacity var(--wxe-transition-default);
+}
+
+.wxe-ai-settings-section--locked .wxe-lock-overlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--wxe-text-color-muted);
+    opacity: 0;
+    transition: opacity var(--wxe-transition-default);
+    pointer-events: none;
+}
+
+.wxe-ai-settings-section--locked:hover > *:not(.wxe-lock-overlay) {
+    opacity: 0;
+}
+
+.wxe-ai-settings-section--locked:hover .wxe-lock-overlay {
+    opacity: 1;
+}
+
+/* ── Lock tooltip (shared, JS-positioned) ──────────────────────────────── */
+.wxe-lock-tooltip {
+    margin: 0;
+    inset: unset;
+    white-space: nowrap;
+}
+
+/* ── Locked state empty state ───────────────────────────────────────────── */
+.wxe-locked-state svg {
+    opacity: var(--wxe-lock-opacity-svg);
+}

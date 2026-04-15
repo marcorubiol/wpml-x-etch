@@ -1,0 +1,171 @@
+# Copyright (C) 2026 WPML X Etch
+# This file is distributed under the same license as the WPML X Etch plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: WPML X Etch\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-26 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Progress / error feedback.
+#: src/Admin/BuilderPanel.php
+msgid "Saving before we proceed."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Still saving. This takes a moment."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Preparing %s translation."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Waiting for ATE."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Opening editor."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Save failed. Try again."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "ATE didn't respond in time. Try again."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "HTTP %s error. Try again."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Nothing to translate."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Could not load data."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Save timeout"
+msgstr ""
+
+#. Panel chrome.
+#: src/Admin/BuilderPanel.php
+msgid "WPML × Etch"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Translations"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Back to Builder"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Page"
+msgstr ""
+
+#. Section headers.
+#: src/Admin/BuilderPanel.php
+msgid "Current Context"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Default Language"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Components"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Filters"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Languages"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "No languages configured."
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Translation"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Status"
+msgstr ""
+
+#. Footer links.
+#: src/Admin/BuilderPanel.php
+msgid "Quick WPML Access"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "String Translation"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Translation Queue"
+msgstr ""
+
+#. Search.
+#: src/Admin/BuilderPanel.php
+msgid "Search"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Search by title…"
+msgstr ""
+
+#. Idle state.
+#: src/Admin/BuilderPanel.php
+msgid "Select a language to translate"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "For security reasons, WPML's translation editor opens in a new secure tab."
+msgstr ""
+
+#. Status labels.
+#: src/Admin/BuilderPanel.php
+msgid "Complete"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Needs Update"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "In Progress"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Not Translated"
+msgstr ""
+
+#: src/Admin/BuilderPanel.php
+msgid "Translated"
+msgstr ""
+
+#. Locking.
+#: src/Admin/BuilderPanel.php
+msgid "Upgrade to Pro to browse all content"
+msgstr ""
+
+#. Pill labels.
+#: src/Admin/BuilderPanel.php
+msgid "Templates"
+msgstr ""

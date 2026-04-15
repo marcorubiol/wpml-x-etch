@@ -1,0 +1,20 @@
+{
+	"name": "zerosense/wpml-x-etch",
+	"description": "Integration bridge between Etch page builder and WPML Multilingual CMS.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"autoload": {
+		"psr-4": {
+			"WpmlXEtch\\": "src/"
+		}
+	},
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"php-stubs/wordpress-stubs": "^6.5"
+	},
+	"config": {
+		"optimize-autoloader": true
+	}
+}

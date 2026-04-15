@@ -1,0 +1,2906 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   WXE Design Tokens — Global
+   Status colors and spacing live in :root because the sidebar dot (#wxe-status-dot)
+   is injected outside #wxe-panel, inside Etch's own button.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+    --wxe-status-not-translated: hsl(15, 95%, 55%);
+    --wxe-status-waiting: hsl(30, 92%, 62%);
+    --wxe-status-needs-update: hsl(55, 95%, 63%);
+    --wxe-status-in-progress: hsl(75, 95%, 66%);
+    --wxe-status-translated: hsl(145, 90%, 65%);
+    --wxe-status-not-translatable: hsl(0, 0%, 53%);
+    --wxe-space-xs: 4px;
+    --wxe-status-dot-size: 7px;
+    /* Used by #wxe-status-dot which lives outside #wxe-panel. */
+    --wxe-border-width-thick: 1.5px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WXE Design Tokens — Panel
+   All visual values are defined here. Rules below reference ONLY --wxe-* vars.
+   ══════════════════════════════════════════════════════════════════════════ */
+#wxe-panel {
+    /* ── Colors: Text ────────────────────────────────────────────────────── */
+    --wxe-text-color: var(--e-text-color, #e3e3e3);
+    --wxe-text-color-muted: var(--e-foreground-color-muted, #b0b0b0);
+
+    /* ── Colors: Backgrounds ─────────────────────────────────────────────── */
+    --wxe-bg-dark: var(--e-base-dark, #121212);
+    --wxe-bg-light: var(--e-base-light, #383838);
+    --wxe-bg-panel: var(--e-panel-background-color, #1e1e1e);
+    --wxe-bg-ultra-light: var(
+        --e-base-ultra-light,
+        color-mix(in oklch, white 15%, transparent)
+    );
+    --wxe-overlay-loading: color-mix(
+        in oklch,
+        var(--wxe-bg-dark) 70%,
+        transparent
+    );
+    --wxe-overlay-status: color-mix(
+        in oklch,
+        var(--wxe-bg-dark) 95%,
+        transparent
+    );
+    --wxe-overlay-spinner-track: color-mix(in oklch, white 20%, transparent);
+    --wxe-row-hover-bg: color-mix(in oklch, white 7%, transparent);
+
+    /* ── Colors: Primary / Accent ────────────────────────────────────────── */
+    --wxe-primary: var(--e-primary, #6de2d6);
+    --wxe-primary-ultra-light: color-mix(
+        in oklch,
+        var(--wxe-primary) 10%,
+        transparent
+    );
+    --wxe-primary-bg-active: color-mix(
+        in oklch,
+        var(--wxe-primary) 12%,
+        transparent
+    );
+    --wxe-primary-bg-active-hover: color-mix(
+        in oklch,
+        var(--wxe-primary) 18%,
+        transparent
+    );
+    --wxe-primary-bg-filtered: color-mix(
+        in oklch,
+        var(--wxe-primary) 15%,
+        transparent
+    );
+
+    --wxe-font-size-xs: 10px;
+    --wxe-accent: var(--wxe-primary);
+
+    /* ── Colors: Borders ─────────────────────────────────────────────────── */
+    --wxe-border-color: var(--e-border-color, #383838);
+    --wxe-border-color-muted: var(
+        --e-border-color-muted,
+        color-mix(in oklch, white 8%, transparent)
+    );
+    --wxe-border-color-ultra-light: var(
+        --e-border-color-ultra-light,
+        var(--wxe-text-color-muted)
+    );
+    --wxe-border-color-input: color-mix(in oklch, white 12%, transparent);
+    --wxe-border-color-section: color-mix(in oklch, white 6%, transparent);
+    --wxe-flag-shadow-color: color-mix(in oklch, white 10%, transparent);
+
+    /* ── Typography ──────────────────────────────────────────────────────── */
+    --wxe-font-family: var(--e-font-interface, sans-serif);
+    --wxe-font-family-etch: var(--etch-font-interface, sans-serif);
+    --wxe-font-size-s: var(--e-font-size-s, 11px);
+    --wxe-font-size-m: var(--e-font-size-m, 12px);
+    --wxe-font-size-close: 20px;
+    --wxe-font-size-hub-title: var(--e-hub-title-font-size);
+    --wxe-font-weight-light: 300;
+    --wxe-font-weight-normal: 400;
+    --wxe-font-weight-text: var(--e-text-font-weight, 500);
+    --wxe-font-weight-heading: var(--e-heading-font-weight, 700);
+    --wxe-line-height-text: var(--e-text-line-height, 1.5);
+    --wxe-line-height-heading: var(--e-heading-line-height);
+    --wxe-line-height-compact: 1;
+    --wxe-letter-spacing: 0.5px;
+
+    /* ── Spacing ─────────────────────────────────────────────────────────── */
+    --wxe-space-xs: var(--e-space-xs, 4px);
+    --wxe-space-s: var(--e-space-s, 8px);
+    --wxe-space-m: var(--e-space-m, 12px);
+    --wxe-space-l: var(--e-space-l, 16px);
+    --wxe-space-xl: var(--e-space-xl, 24px);
+    --wxe-accordion-gap: var(--e-accordion-gap, 4px);
+    --wxe-panel-gap: var(--e-panel-gap);
+    --wxe-panel-padding: var(--e-panel-padding);
+    --wxe-chip-gap: 5px;
+    --wxe-chip-padding-left: 10px;
+
+    /* ── Borders ─────────────────────────────────────────────────────────── */
+    --wxe-border-width: var(--e-border-width, 1px);
+    --wxe-border-style: var(--e-border-style, solid);
+    --wxe-border: var(
+        --e-border,
+        var(--wxe-border-width) var(--wxe-border-style) var(--wxe-border-color)
+    );
+    --wxe-border-radius: var(--e-border-radius, 6px);
+    --wxe-border-radius-pill: 999px;
+    --wxe-border-radius-circle: 50%;
+    --wxe-border-radius-skeleton: 4px;
+    --wxe-border-radius-flag: 2px;
+    --wxe-border-width-lang-row: 2px;
+    --wxe-border-width-spinner: 3px;
+    --wxe-border-width-thin: 0.5px;
+    --wxe-border-width-outline: 2px;
+    --wxe-space-2xs: 2px;
+    --wxe-space-tooltip-gap: 6px;
+    --wxe-blur-s: 2px;
+    --wxe-blur-m: 4px;
+
+    /* ── Shadows ─────────────────────────────────────────────────────────── */
+    --wxe-shadow-flag: 0 0 0 var(--wxe-border-width)
+        var(--wxe-flag-shadow-color);
+    --wxe-shadow-search-focus: 0 1px 0 0 var(--wxe-primary);
+
+    /* ── Transitions ─────────────────────────────────────────────────────── */
+    --wxe-transition-speed: 0.15s;
+    --wxe-transition-easing: ease;
+    --wxe-transition-default: var(--wxe-transition-speed)
+        var(--wxe-transition-easing);
+    --wxe-transition-pills: 0.2s var(--wxe-transition-easing);
+    --wxe-transition-fade-in: 0.12s ease-in;
+    --wxe-transition-fade-out: 0.08s ease-out;
+
+    /* ── Animations ──────────────────────────────────────────────────────── */
+    --wxe-anim-spin-centered: 0.8s;
+    --wxe-anim-spin: 1s;
+    --wxe-anim-pulse: 1.2s;
+
+    /* ── Z-index ─────────────────────────────────────────────────────────── */
+    --wxe-z-loading: 1;
+    --wxe-z-panel: 2;
+    --wxe-z-tooltip: 10;
+    --wxe-z-overlay: 100;
+    --wxe-z-loading-overlay: 9999;
+    --wxe-z-loading-spinner: 10000;
+
+    /* ── Dimensions ──────────────────────────────────────────────────────── */
+    --wxe-sidebar-width: 295px;
+    --wxe-sidebar-min-width: 200px;
+    --wxe-toggle-size: 32px;
+    --wxe-notification-dot-size: 4px;
+    --wxe-pill-dot-size: 4px;
+    --wxe-chip-max-width: 180px;
+    --wxe-overlay-max-width: 400px;
+    --wxe-skeleton-line-height: 12px;
+    --wxe-skeleton-title-height: 14px;
+    --wxe-panel-header-height: var(--e-panel-header-height);
+    --wxe-context-inner-height: var(--e-context-inner-height);
+    --wxe-icon-size-l: var(--e-icon-size-l, 16px);
+    --wxe-lock-icon-size: 14px;
+    --wxe-lang-row-height: 20px;
+    --wxe-grid-card-min: 350px;
+    --wxe-toggle-track-w: 23px;
+    --wxe-toggle-track-h: 13px;
+    --wxe-toggle-thumb-size: 10px;
+    --wxe-toggle-padding: 1.5px;
+
+    /* ── Locking (used in wxe-locking.css) ───────────────────────────────── */
+    --wxe-lock-opacity-pill: 0.5;
+    --wxe-lock-opacity-filter: 0.35;
+    --wxe-lock-opacity-sidebar: 0.45;
+    --wxe-lock-opacity-footer: 0.35;
+    --wxe-lock-opacity-icon: 0.8;
+    --wxe-lock-opacity-svg: 0.4;
+    --wxe-lock-grayscale: grayscale(0.5);
+}
+
+/* ── Focus-visible ──────────────────────────────────────────────────────── */
+.wxe-panel button:focus-visible,
+.wxe-panel a:focus-visible,
+.wxe-panel input:focus-visible:not(.wxe-search-input) {
+    outline: var(--wxe-border-width-outline) solid var(--wxe-accent);
+    outline-offset: var(--wxe-border-width-outline);
+}
+.wxe-panel button:focus:not(:focus-visible),
+.wxe-panel a:focus:not(:focus-visible),
+.wxe-panel input:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────────── */
+.wxe-panel--loading::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--wxe-overlay-loading);
+    backdrop-filter: blur(var(--wxe-blur-s));
+    z-index: var(--wxe-z-loading-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wxe-panel--loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--wxe-toggle-size);
+    height: var(--wxe-toggle-size);
+    border: var(--wxe-border-width-spinner) solid
+        var(--wxe-overlay-spinner-track);
+    border-top-color: var(--wxe-primary);
+    border-radius: var(--wxe-border-radius-circle);
+    animation: wxe-spin-centered var(--wxe-anim-spin-centered) linear infinite;
+    z-index: var(--wxe-z-loading-spinner);
+}
+
+@keyframes wxe-spin-centered {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* ── Back button icon wrapper ────────────────────────────────────────────── */
+.wxe-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Tooltips (popover + interestfor + anchor positioning) ──────────────────
+   Modern declarative tooltips. Zero JS, instant on hover/focus, top-layer
+   rendering (no z-index wars, no clipping). Requires Chrome 135+ / Edge 135+
+   for `interestfor`; gracefully no-ops on older browsers (aria-label still
+   works for screen readers).
+
+   Usage:
+     <button interestfor="my-tip" aria-label="…">…</button>
+     <div id="my-tip" popover="hint" class="wxe-tooltip wxe-tooltip--below-end">…</div>
+*/
+/* Native delay defaults are ~500ms each (1s total to appear). Override for
+   instant feedback. The custom-property duplicates are read by the polyfill
+   on browsers without native interestfor support (Firefox/Safari as of 2026). */
+[interestfor] {
+    interest-delay-start: 0s;
+    --interest-delay-start: 0s;
+    interest-delay-end: 0s;
+    --interest-delay-end: 0s;
+}
+
+#wxe-back {
+    anchor-name: --wxe-back-anchor;
+}
+
+#wxe-resync-all-btn {
+    anchor-name: --wxe-resync-anchor;
+}
+
+#wxe-sidebar-badge {
+    anchor-name: --wxe-sidebar-badge-anchor;
+}
+
+.wxe-tooltip {
+    /* popover lives in the top layer, so we override popover defaults */
+    position: fixed;
+    margin: 0;
+    inset: unset;
+    padding: var(--wxe-accordion-gap) var(--wxe-space-s);
+    background: var(--wxe-bg-light);
+    color: var(--wxe-text-color);
+    font-size: var(--wxe-font-size-s);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color);
+    border-radius: var(--wxe-border-radius);
+    white-space: pre-line;
+    text-align: center;
+    text-wrap: balance;
+    max-inline-size: 32ch;
+    pointer-events: none;
+}
+
+/* Shared JS-positioned tooltip for data-tooltip elements (sparkle + arrow
+   buttons). Short labels, no wrapping needed. */
+.wxe-shared-tooltip {
+    margin: 0;
+    inset: unset;
+    white-space: nowrap;
+}
+
+/* `position-try-fallbacks: flip-block` makes the tooltip flip above the
+   anchor when there's no room below (e.g. panel pinned near viewport bottom).
+   `flip-inline` handles inline-edge clipping; the combined fallback covers
+   the corner case where both axes overflow. `margin-block` (not just -start)
+   so the gap survives a flip. */
+#wxe-back-tooltip {
+    position-anchor: --wxe-back-anchor;
+    position-area: block-end span-inline-end;
+    margin-block: var(--wxe-space-tooltip-gap);
+    position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+}
+
+/* Source language flag in the post meta caption — opens below, aligned
+   to the inline-start side so it sits under the flag without overflowing
+   the right edge of the card. */
+#wxe-source-lang-tooltip {
+    position-anchor: --wxe-source-lang-anchor;
+    position-area: block-end span-inline-start;
+    margin-block: var(--wxe-space-tooltip-gap);
+    position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+}
+
+/* Current Context status badge — opens below the badge, aligned to its
+   inline-start side so the tooltip body sits under the label without
+   overflowing the panel's right edge. */
+#wxe-sidebar-badge-tooltip {
+    position-anchor: --wxe-sidebar-badge-anchor;
+    position-area: block-end span-inline-start;
+    margin-block: var(--wxe-space-tooltip-gap);
+    position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+}
+
+/* The Force Sync button lives at the very bottom of the sidebar (footer
+   title row), so its tooltip opens upward by default. Width is bounded
+   to the sidebar's own width (minus a small inline margin) so the tooltip
+   never spills outside the panel — the two-row stats wrap inside the
+   sidebar column instead of pushing into the canvas. Standard fallbacks
+   handle viewport edge cases. */
+#wxe-resync-tooltip {
+    position-anchor: --wxe-resync-anchor;
+    position-area: block-start span-inline-start;
+    margin-block: var(--wxe-space-tooltip-gap);
+    text-align: start;
+    max-inline-size: calc(var(--wxe-sidebar-width) - var(--wxe-space-l) * 2);
+    position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+}
+
+/* Two-group tooltip body: each group is a small caption-style label
+   ("All site" / "Current context") followed by the value line. Stacked
+   in normal block flow with a sibling-margin between groups — we cannot
+   set `display` on the popover element itself or it overrides the UA
+   `display: none` that hides closed popovers. */
+.wxe-resync-tooltip {
+    padding: var(--wxe-space-s) var(--wxe-space-m);
+}
+
+.wxe-resync-tooltip__group + .wxe-resync-tooltip__group {
+    margin-block-start: var(--wxe-space-s);
+}
+
+.wxe-resync-tooltip__group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wxe-resync-tooltip__label {
+    font-size: var(--wxe-font-size-xs);
+    font-weight: var(--wxe-font-weight-heading);
+    text-transform: uppercase;
+    letter-spacing: var(--wxe-letter-spacing);
+    color: var(--wxe-text-color-muted);
+    opacity: 0.7;
+}
+
+.wxe-resync-tooltip__value {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color);
+    line-height: var(--wxe-line-height-text);
+}
+
+/* ── WPML button in Etch settings bar ───────────────────────────────────── */
+#wxe-btn-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#wxe-status-dot {
+    position: absolute;
+    top: var(--wxe-space-xs);
+    right: var(--wxe-space-xs);
+    width: var(--wxe-status-dot-size);
+    height: var(--wxe-status-dot-size);
+    border-radius: 50%;
+    border: var(--wxe-border-width-thick) solid var(--e-base-dark, #121212);
+    opacity: 0.85;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+
+#wxe-status-dot[data-dot="not_translated"] {
+    display: block;
+    background: var(--wxe-status-not-translated);
+}
+
+#wxe-status-dot[data-dot="needs_update"] {
+    display: block;
+    background: var(--wxe-status-needs-update);
+}
+
+#wxe-status-dot[data-dot="complete"] {
+    display: block;
+    background: var(--wxe-status-translated);
+}
+
+#wxe-status-dot[data-dot="in_progress"] {
+    display: block;
+    background: var(--wxe-status-in-progress);
+}
+
+#wxe-status-dot[data-dot="waiting"] {
+    display: block;
+    background: var(--wxe-status-waiting);
+}
+
+#wxe-status-dot[data-dot="not_translatable"] {
+    display: block;
+    background: var(--wxe-status-not-translatable);
+}
+
+.etch-builder-button:has(.iconify--vscode-icons) {
+    background-color: transparent !important;
+    color: var(
+        --etch-icon-color,
+        var(--e-foreground-color-muted, #999)
+    ) !important;
+    border: var(--wxe-border-width-thin) solid transparent !important;
+    padding-inline: var(--e-icon-padding, 8px) !important;
+    padding-block: var(--e-icon-padding, 8px) !important;
+    line-height: 1 !important;
+    height: calc(
+        var(--e-icon-padding, 8px) * 2 + var(--e-icon-size-l, 16px)
+    ) !important;
+    width: calc(
+        var(--e-icon-padding, 8px) * 2 + var(--e-icon-size-l, 16px)
+    ) !important;
+}
+
+.etch-builder-button:has(.iconify--vscode-icons):hover {
+    background-color: var(--e-base-light, #383838) !important;
+    color: var(--e-text-color, #e3e3e3) !important;
+}
+
+.etch-builder-button:has(.iconify--vscode-icons) svg path {
+    fill: currentColor !important;
+}
+
+/* ── Two-column panel (mirrors Content Hub) ─────────────────────────────── */
+.wxe-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    /* overridden by JS to skip the settings bar */
+    z-index: var(--wxe-z-panel);
+    /* above resize handles (z-index: 1) */
+    height: var(--wxe-context-inner-height);
+    flex-direction: row;
+    background: var(--wxe-bg-dark);
+    font-family: var(--wxe-font-family);
+    color: var(--wxe-text-color);
+}
+
+.wxe-panel.is-active {
+    display: flex;
+}
+
+/* ── Sidebar (left column) — scoped to our panel ────────────────────────── */
+#wxe-panel .content-hub__sidebar {
+    display: flex;
+    flex-direction: column;
+    width: var(--wxe-sidebar-width);
+    min-width: var(--wxe-sidebar-min-width);
+    flex-shrink: 0;
+    border-right: var(--wxe-border);
+    background: var(--wxe-bg-panel);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+#wxe-panel .content-hub__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--wxe-panel-gap);
+    padding: var(--wxe-space-m);
+    flex-shrink: 0;
+}
+
+#wxe-panel .hub-title {
+    margin: 0;
+    font-size: var(--wxe-font-size-hub-title);
+    font-weight: var(--wxe-font-weight-normal);
+    line-height: var(--wxe-line-height-heading);
+    font-optical-sizing: auto;
+    color: var(--wxe-text-color);
+    font-family: var(--wxe-font-family-etch);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Sidebar content ─────────────────────────────────────────────────────── */
+#wxe-panel .content-hub_sidebar__content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    min-inline-size: 0;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    /* Each section sized by its content, not stretched to fill the column.
+       Without this, grid auto-rows would distribute the remaining height
+       across sections and create huge gaps between them. */
+    grid-auto-rows: max-content;
+    gap: var(--wxe-panel-gap);
+}
+
+#wxe-panel .content-hub_sidebar__content > * {
+    min-inline-size: 0;
+}
+
+/* ── Section divider ─────────────────────────────────────────────────────── */
+#wxe-panel .horizontal {
+    height: var(--wxe-border-width);
+    background: var(--wxe-border-color);
+    flex-shrink: 0;
+}
+
+/* ── List header with optional right-side slot ───────────────────────────── */
+#wxe-panel .content-hub-list__header {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-panel-gap);
+    margin-block-end: var(--wxe-panel-gap);
+    block-size: var(--wxe-panel-header-height);
+    border-block: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color);
+    padding-inline: calc(var(--wxe-panel-padding) * 2);
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-inline-size: 0;
+}
+
+#wxe-panel .content-hub-list__header h3 {
+    margin: 0;
+    min-inline-size: 0;
+    font-size: var(--wxe-font-size-m);
+    font-weight: var(--wxe-font-weight-text);
+    color: var(--wxe-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#wxe-panel .wxe-section-header h3 {
+    margin: 0;
+}
+
+#wxe-panel .content-hub-list__header .wxe-badge {
+    margin-left: auto;
+}
+
+.content-hub-list__content {
+    display: flex;
+    flex-direction: column;
+}
+
+.content-hub-list__item {
+    display: flex;
+}
+
+.content-hub-list__item-button {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    width: 100%;
+    padding: var(--wxe-space-s) var(--wxe-space-l);
+    background: transparent;
+    border: none;
+    color: var(--wxe-text-color);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: var(--button-font-size, var(--wxe-font-size-m));
+    transition: background var(--wxe-transition-default);
+}
+
+.content-hub-list__item-button:hover {
+    background: var(--wxe-bg-light);
+}
+
+.content-hub-list__item--selected .content-hub-list__item-button {
+    background: var(--wxe-primary-ultra-light);
+    color: var(--wxe-primary);
+}
+
+.wxe-lang-item--filtered .content-hub-list__item-button {
+    background: var(--wxe-primary-bg-filtered);
+    border-left: var(--wxe-border-width-lang-row) solid var(--wxe-primary);
+}
+
+.wxe-lang-item--no-filter .content-hub-list__item-button {
+    cursor: default;
+    pointer-events: none;
+}
+
+.wxe-lang-item--no-filter .content-hub-list__item-button:hover {
+    background: transparent;
+}
+
+.wxe-lang-name {
+    flex: 1;
+    font-size: var(--wxe-font-size-m);
+    font-weight: var(--wxe-font-weight-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#wxe-panel .content-hub-list__disclaimer {
+    padding: var(--wxe-space-l);
+    margin: 0;
+    font-size: var(--wxe-font-size-m);
+    color: var(--wxe-text-color-muted);
+}
+
+/* ── Content area (right column) ─────────────────────────────────────────── */
+.wxe-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: var(--wxe-bg-light);
+}
+
+/* ── Placeholder ─────────────────────────────────────────────────────────── */
+.wxe-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--wxe-space-m);
+    color: var(--wxe-text-color-muted);
+    font-size: var(--wxe-font-size-m);
+    text-align: center;
+    padding: var(--wxe-space-xl);
+}
+
+/* ── Iframe area ─────────────────────────────────────────────────────────── */
+.wxe-iframe-area {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    position: relative;
+}
+
+.wxe-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--wxe-space-m);
+    color: var(--wxe-text-color-muted);
+    font-size: var(--wxe-font-size-m);
+    background: var(--wxe-bg-dark);
+    z-index: var(--wxe-z-loading);
+}
+
+.wxe-spin {
+    animation: wxe-spin var(--wxe-anim-spin) linear infinite;
+}
+
+@keyframes wxe-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.wxe-iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Flag ────────────────────────────────────────────────────────────────── */
+.wxe-flag {
+    border-radius: var(--wxe-border-radius-flag);
+    box-shadow: var(--wxe-shadow-flag);
+    flex-shrink: 0;
+}
+
+/* ── Muted uppercase label (shared) ─────────────────────────────────────── */
+#wxe-panel .wxe-section-header h3,
+.wxe-filter-subheader {
+    font-size: var(--wxe-font-size-s);
+    font-weight: var(--wxe-font-weight-heading);
+    text-transform: uppercase;
+    letter-spacing: var(--wxe-letter-spacing);
+    color: var(--wxe-text-color-muted);
+}
+
+/* Section headings inside the sidebar render as: [icon] TITLE — the icon
+   is 14px stroke SVG matching the back button, and it sits flush with
+   the label text. */
+#wxe-panel .wxe-section-header h3 {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    min-inline-size: 0;
+}
+
+.wxe-section-icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+/* ── Post info (Current Context card) ───────────────────────────────────── */
+/* Two-line summary of the post in focus: title (primary) + meta caption
+   (secondary) showing post type · source language flag. Rendered as a
+   subtle inset card — no border, just a tinted background — so it reads
+   as "read-only context info" and stands visually apart from the filter
+   sections below without adding a heavy frame. */
+.wxe-post-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-s);
+    margin-block: var(--wxe-space-s);
+    margin-inline: var(--wxe-space-l);
+    padding: var(--wxe-space-m);
+    min-inline-size: 0;
+    overflow: hidden;
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    border-radius: var(--wxe-border-radius);
+}
+
+.wxe-post-title-text {
+    margin: 0;
+    font-size: var(--wxe-font-size-m);
+    font-weight: var(--wxe-font-weight-text);
+    line-height: var(--wxe-line-height-compact);
+    color: var(--wxe-text-color);
+    /* Allow up to 2 lines, then ellipsise the rest. The native title=
+       attribute on the markup acts as the long-title fallback. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+/* Caption line under the title: post type · source language. */
+.wxe-post-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--wxe-space-xs);
+    font-size: var(--wxe-font-size-xs);
+    line-height: var(--wxe-line-height-compact);
+    color: var(--wxe-text-color-muted);
+    min-inline-size: 0;
+}
+
+.wxe-post-meta-sep {
+    opacity: 0.5;
+    user-select: none;
+}
+
+.wxe-post-meta-source {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    anchor-name: --wxe-source-lang-anchor;
+}
+
+/* Flag inside the caption line runs smaller and dimmer than a regular
+   language chip flag. Goal: the flag still reads as a language cue but
+   stops competing with the muted caption text as the only saturated
+   element in the card. */
+.wxe-post-meta-source .wxe-flag {
+    opacity: 0.7;
+    width: 12px;
+    height: auto;
+}
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+.wxe-badge {
+    --size-multiplicator: 0.9;
+    font-size: calc(var(--wxe-font-size-s) * var(--size-multiplicator));
+    font-weight: var(--wxe-font-weight-light);
+    padding-block: calc(var(--wxe-space-xs) * var(--size-multiplicator));
+    padding-inline: calc(var(--wxe-space-s) * var(--size-multiplicator));
+    border-radius: var(--wxe-border-radius);
+    letter-spacing: calc(var(--wxe-letter-spacing) * var(--size-multiplicator));
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: var(--wxe-line-height-compact);
+}
+
+.wxe-badge--success {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-translated) 12%,
+        transparent
+    );
+    color: var(--wxe-status-translated);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-translated);
+}
+
+.wxe-badge--warning {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-needs-update) 12%,
+        transparent
+    );
+    color: var(--wxe-status-needs-update);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-needs-update);
+}
+
+.wxe-badge--info {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-in-progress) 12%,
+        transparent
+    );
+    color: var(--wxe-status-in-progress);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-in-progress);
+}
+
+.wxe-badge--waiting {
+    background: color-mix(in srgb, var(--wxe-status-waiting) 12%, transparent);
+    color: var(--wxe-status-waiting);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-waiting);
+}
+
+.wxe-badge--danger {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-not-translated) 12%,
+        transparent
+    );
+    color: var(--wxe-status-not-translated);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-not-translated);
+}
+
+.wxe-badge--muted {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-not-translatable) 12%,
+        transparent
+    );
+    color: var(--wxe-status-not-translatable);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-status-not-translatable);
+}
+
+/* ── Open-again link ─────────────────────────────────────────────────────────── */
+.wxe-open-link {
+    color: var(--wxe-primary);
+    font-size: var(--wxe-font-size-s);
+    text-decoration: none;
+}
+
+.wxe-open-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Header close button ─────────────────────────────────────────────────── */
+.wxe-header-close {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--wxe-text-color-muted);
+    font-size: var(--wxe-font-size-close);
+    line-height: var(--wxe-line-height-compact);
+    padding: 0;
+    margin-left: auto;
+    cursor: pointer;
+    transition: color var(--wxe-transition-default);
+}
+
+.wxe-header-close:hover {
+    color: var(--wxe-text-color);
+}
+
+/* ── Status overlay ──────────────────────────────────────────────────────── */
+.wxe-status-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: var(--wxe-overlay-status);
+    z-index: var(--wxe-z-overlay);
+    backdrop-filter: blur(var(--wxe-blur-m));
+}
+
+.wxe-status-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--wxe-space-m);
+    color: var(--wxe-text-color);
+    font-size: var(--wxe-font-size-m);
+    text-align: center;
+    padding: var(--wxe-space-xl);
+    max-width: var(--wxe-overlay-max-width);
+}
+
+/* ── Components section ──────────────────────────────────────────────────── */
+.wxe-components-content {
+    display: grid;
+    gap: var(--wxe-space-xl);
+    align-items: start;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    align-content: start;
+}
+
+.wxe-section {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(var(--wxe-grid-card-min), 100%), 1fr)
+    );
+    gap: var(--wxe-space-l);
+    padding: var(--wxe-space-m) var(--wxe-space-l);
+    align-items: start;
+    align-content: start;
+}
+
+.wxe-section-header {
+    grid-column: 1 / -1;
+    padding: 0;
+    margin-bottom: calc(var(--wxe-space-xs) * -1);
+}
+
+.wxe-section-header:has(.wxe-section-subtitle) {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* Variant with an inline status badge aligned to the right of the title.
+   Used by the "Current Context" header to surface the active post's
+   translation status at section level (answers the "status of what?"
+   question by sitting next to the section name). */
+/* Shared heading row for all top-level sidebar sections (Current Context,
+   Filters, Switcher Component). Owns the structural properties — padding
+   rhythm and the top border that separates sections — so every section
+   reads as equivalent. Typography lives on the child (h3 or accordion
+   button) via its own rules, which all resolve to the same muted uppercase
+   label style. */
+.wxe-sidebar-section-heading {
+    padding-block: var(--wxe-space-s);
+    padding-inline: calc(var(--wxe-panel-padding) * 2);
+    margin-bottom: 0;
+    border-block-start: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color);
+}
+
+.wxe-section-header--with-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wxe-space-s);
+}
+
+/* Status badge next to "Current Context" is styled to match a
+   `.wxe-status-filter` chip in its hover state: same padding rhythm, same
+   typography, border tinted to 30% of the status colour, background at
+   6% of currentColor. Uses `currentColor` throughout so the per-variant
+   classes (success/warning/info/waiting/danger) only need to set the
+   text colour — everything else cascades correctly from that. */
+.wxe-section-header--with-badge .wxe-badge {
+    font-size: calc(var(--wxe-font-size-xs, 11px) * 0.9);
+    font-weight: var(--wxe-font-weight-light);
+    padding-block: calc(var(--wxe-space-xs) * 0.9);
+    padding-inline: calc(var(--wxe-space-s) * 0.9);
+    border-radius: var(--wxe-border-radius);
+    letter-spacing: var(--wxe-letter-spacing);
+    line-height: var(--wxe-line-height-compact);
+    border: var(--wxe-border-width) var(--wxe-border-style);
+    border-color: color-mix(in srgb, currentColor 30%, transparent);
+    background: color-mix(in srgb, currentColor 6%, transparent);
+    font-family: var(--wxe-font-family-etch);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.wxe-section-subtitle {
+    margin: 0;
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    opacity: 0.5;
+}
+
+.wxe-section-subtitle--link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    text-decoration: none;
+    transition: opacity var(--wxe-transition-default), color var(--wxe-transition-default);
+}
+
+.wxe-section-subtitle--link:hover {
+    opacity: 1;
+    color: var(--wxe-text-color);
+}
+
+.wxe-section-subtitle--link svg {
+    flex-shrink: 0;
+}
+
+.wxe-component-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--wxe-space-s);
+    padding: var(--wxe-space-s);
+    height: 100%;
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-muted);
+    border-radius: var(--wxe-border-radius);
+}
+
+.wxe-component-header {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    padding: 0 var(--wxe-space-xs) var(--wxe-space-2xs);
+    font-size: var(--wxe-font-size-m);
+    font-weight: var(--wxe-font-weight-heading);
+    color: var(--wxe-text-color);
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+a.wxe-component-header {
+    text-decoration: underline dotted;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+    text-underline-offset: var(--wxe-space-3xs, 3px);
+    color: inherit;
+}
+
+a.wxe-component-header:hover {
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+}
+
+/* ── Sidebar header actions (sparkle + badge) ────────────────────────────── */
+.wxe-sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+}
+
+.wxe-ai-context-btn {
+    opacity: 0.3;
+}
+
+.wxe-ai-context-btn:hover {
+    opacity: 1;
+}
+
+/* ── Component header row (title + translate-all button) ─────────────────── */
+.wxe-component-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--wxe-space-s);
+    padding-right: calc(var(--wxe-space-xs) / 2);
+}
+
+.wxe-loop-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding-left: var(--wxe-space-xs);
+    padding-bottom: var(--wxe-space-xs);
+}
+
+.wxe-loop-header-info .wxe-component-header {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.wxe-loop-st-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    padding: 0;
+    font-size: var(--wxe-font-size-s);
+    font-family: var(--wxe-font-family-etch);
+    color: var(--wxe-text-color-muted);
+    opacity: 0.5;
+    text-decoration: none;
+    transition: opacity var(--wxe-transition-default), color var(--wxe-transition-default);
+}
+
+.wxe-loop-st-link:hover {
+    opacity: 1;
+    color: var(--wxe-text-color);
+}
+
+.wxe-loop-st-link svg {
+    flex-shrink: 0;
+}
+
+/* ── AI translate buttons ────────────────────────────────────────────────── */
+.wxe-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.wxe-ai-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--wxe-space-xs);
+    padding: var(--wxe-space-xs);
+    min-width: 28px;
+    min-height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--wxe-border-radius);
+    cursor: pointer;
+    color: var(--wxe-text-color-muted);
+    opacity: 0.4;
+    transition:
+        opacity var(--wxe-transition-default),
+        color var(--wxe-transition-default),
+        background var(--wxe-transition-default);
+}
+
+/* Row-level sparkles: hidden until row hover */
+.wxe-component-lang-row .wxe-ai-btn,
+.wxe-item-lang-row .wxe-ai-btn {
+    opacity: 0;
+}
+
+/* Row hover: sparkle appears */
+.wxe-component-lang-row:hover .wxe-ai-btn,
+.wxe-item-lang-row:hover .wxe-ai-btn {
+    opacity: 0.6;
+    color: var(--wxe-text-color);
+}
+
+/* Direct sparkle hover: accent highlight — !important to win over row hover */
+.wxe-ai-btn:hover {
+    opacity: 1 !important;
+    color: var(--wxe-accent) !important;
+    background: color-mix(in srgb, var(--wxe-accent) 14%, transparent) !important;
+}
+
+.wxe-ai-btn:active {
+    background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.wxe-ai-btn--dim {
+    opacity: 0.2;
+    cursor: default;
+}
+
+.wxe-ai-btn--dim:hover {
+    background: transparent;
+    opacity: 0.2;
+}
+
+.wxe-ai-btn--locked {
+    opacity: 0.25;
+    cursor: pointer;
+}
+
+.wxe-ai-btn--locked:hover {
+    opacity: 0.5;
+}
+
+.wxe-ai-btn-icon {
+    display: inline-flex;
+}
+
+.wxe-ai-btn-icon--lock {
+    display: none;
+}
+
+.wxe-ai-btn--locked:hover .wxe-ai-btn-icon:not(.wxe-ai-btn-icon--lock) {
+    display: none;
+}
+
+.wxe-ai-btn--locked:hover .wxe-ai-btn-icon--lock {
+    display: inline-flex;
+}
+
+.wxe-ai-btn--disabled {
+    opacity: 0.15 !important;
+    cursor: default !important;
+    background: transparent !important;
+}
+
+.wxe-ai-btn--disabled:hover,
+.wxe-ai-btn--disabled:active,
+.wxe-ai-btn--disabled:focus {
+    opacity: 0.35 !important;
+    cursor: default !important;
+    color: var(--wxe-accent) !important;
+    background: color-mix(in srgb, var(--wxe-accent) 14%, transparent) !important;
+}
+
+
+.wxe-ai-translate-all {
+    font-family: var(--wxe-font-family-etch);
+    font-size: var(--wxe-font-size-xs, 11px);
+}
+
+.wxe-row-sparkle {
+    flex-shrink: 0;
+}
+
+.wxe-ai-translate-all .wxe-spin {
+    color: var(--wxe-accent);
+}
+
+/* ── AI inline translation states ────────────────────────────────────────── */
+.wxe-row--translating {
+    border-left-color: var(--wxe-accent) !important;
+    animation: wxe-row-pulse 1.5s ease-in-out infinite;
+}
+
+.wxe-row--translating .wxe-ai-btn {
+    opacity: 1;
+    color: var(--wxe-accent);
+    pointer-events: none;
+}
+
+.wxe-row--translating .wxe-row-arrow {
+    opacity: 0.15;
+}
+
+.wxe-row--success {
+    border-left-color: var(--wxe-status-translated) !important;
+}
+
+.wxe-row--success .wxe-ai-btn {
+    opacity: 1;
+    color: var(--wxe-status-translated);
+}
+
+.wxe-row--error {
+    border-left-color: var(--wxe-status-not-translated) !important;
+}
+
+.wxe-row--error .wxe-ai-btn {
+    opacity: 1;
+    color: var(--wxe-status-not-translated);
+}
+
+@keyframes wxe-row-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ── AI settings section ─────────────────────────────────────────────────── */
+.wxe-ai-settings-section {
+    border-top: var(--wxe-border-width) var(--wxe-border-style) var(--wxe-border-color);
+}
+
+.wxe-ai-settings-body {
+    padding: var(--wxe-space-m) var(--wxe-space-l);
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-m);
+}
+
+.wxe-ai-settings-body[hidden] {
+    display: none;
+}
+
+.wxe-ai-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-xs);
+}
+
+.wxe-ai-label {
+    font-family: var(--wxe-font-family-etch);
+    font-size: var(--wxe-font-size-xs, 11px);
+    font-weight: var(--wxe-font-weight-heading);
+    color: var(--wxe-text-color-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--wxe-letter-spacing);
+}
+
+.wxe-ai-select,
+.wxe-ai-input {
+    font-family: var(--wxe-font-family-etch);
+    font-size: var(--wxe-font-size-s);
+    padding: var(--wxe-space-xs) var(--wxe-space-s);
+    background: var(--wxe-bg-input, color-mix(in srgb, currentColor 6%, transparent));
+    border: var(--wxe-border-width) var(--wxe-border-style) var(--wxe-border-color);
+    border-radius: var(--wxe-border-radius);
+    color: var(--wxe-text-color);
+}
+
+.wxe-ai-key-row {
+    display: flex;
+    gap: var(--wxe-space-xs);
+}
+
+.wxe-ai-key-row .wxe-ai-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.wxe-ai-test-result {
+    font-family: var(--wxe-font-family-etch);
+    font-size: var(--wxe-font-size-xs, 11px);
+    min-height: 1.4em;
+    line-height: 1.4;
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-ai-test-result--error {
+    color: var(--e-danger, #f26060);
+}
+
+.wxe-component-lang-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wxe-space-m);
+    padding: calc(var(--wxe-space-xs) / 2) calc(var(--wxe-space-xs) / 2) calc(var(--wxe-space-xs) / 2) var(--wxe-space-s);
+    border-radius: var(--wxe-border-radius);
+}
+
+.wxe-component-lang-info {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    flex: 1;
+    min-width: 0;
+}
+
+.wxe-component-lang-name {
+    font-size: var(--wxe-font-size-m);
+    font-weight: var(--wxe-font-weight-text);
+    color: var(--wxe-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wxe-component-action {
+    flex-shrink: 0;
+}
+
+/* ── Pills bar ──────────────────────────────────────────────────────────── */
+/* ── Pills wrapper (search toggle + scrollable pills) ──────────────────── */
+.wxe-pills-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    padding-block: calc(var(--wxe-space-s) * 1.37);
+    padding-inline: var(--wxe-space-l);
+    border-bottom: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-ultra-light);
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.wxe-ai-global-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.wxe-search-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.wxe-search-toggle {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--wxe-toggle-size);
+    height: var(--wxe-toggle-size);
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-ultra-light);
+    border-radius: var(--wxe-border-radius-circle);
+    color: var(--wxe-text-color-muted);
+    cursor: pointer;
+    transition:
+        color var(--wxe-transition-default),
+        border-color var(--wxe-transition-default);
+}
+
+.wxe-search-toggle:hover {
+    color: var(--wxe-text-color);
+    border-color: var(--wxe-bg-ultra-light);
+}
+
+.wxe-search-toggle--active {
+    color: var(--wxe-primary);
+    border-color: var(--wxe-primary);
+}
+
+.wxe-pills-bar {
+    display: flex;
+    gap: var(--wxe-space-xs);
+    padding: 0;
+    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    opacity: 1;
+    transition: opacity var(--wxe-transition-pills);
+}
+
+.wxe-pills-bar--hidden {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    visibility: hidden;
+}
+
+.wxe-pills-bar::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── Pill / chip shared base ─────────────────────────────────────────────── */
+.wxe-pill,
+.wxe-context-chip {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-ultra-light);
+    border-radius: var(--wxe-border-radius-pill);
+    font-size: var(--wxe-font-size-m);
+    font-family: var(--wxe-font-family-etch);
+    color: var(--wxe-text-color-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+    transition:
+        background var(--wxe-transition-default),
+        color var(--wxe-transition-default),
+        border-color var(--wxe-transition-default);
+}
+
+/* ── Context chip ────────────────────────────────────────────────────────── */
+.wxe-context-chip {
+    gap: var(--wxe-chip-gap);
+    padding: var(--wxe-accordion-gap) var(--wxe-space-m)
+        var(--wxe-accordion-gap) var(--wxe-chip-padding-left);
+    max-width: var(--wxe-chip-max-width);
+}
+
+.wxe-context-chip-title,
+.wxe-pill-title {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    font-weight: var(--wxe-font-weight-text);
+    line-height: var(--wxe-line-height-text);
+    padding-right: var(--wxe-space-xs);
+}
+
+/* ── Context chip upgrade tooltip (FREE mode) ────────────────────────────── */
+.wxe-context-chip--locked {
+    position: relative;
+}
+
+.wxe-context-chip--locked::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + var(--wxe-space-tooltip-gap));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--wxe-bg-light);
+    color: var(--wxe-text-color);
+    font-size: var(--wxe-font-size-s);
+    white-space: nowrap;
+    padding: var(--wxe-accordion-gap) var(--wxe-space-s);
+    border-radius: var(--wxe-border-radius);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--wxe-transition-default);
+    z-index: var(--wxe-z-tooltip);
+}
+
+.wxe-context-chip--locked:hover::after {
+    opacity: 1;
+}
+
+/* Divider between search toggle and pills bar (outside wxe-pills-bar). */
+.wxe-pills-wrapper > .wxe-pills-divider {
+    width: var(--wxe-border-width);
+    height: 2em;
+    background: var(--wxe-border-color-ultra-light);
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0;
+}
+
+.wxe-pills-group {
+    display: flex;
+    gap: var(--wxe-space-xs);
+    align-items: center;
+    flex-shrink: 0;
+    padding-right: var(--wxe-space-s);
+    border-right: var(--wxe-border-width) solid
+        var(--wxe-border-color-ultra-light);
+}
+
+.wxe-pills-group:last-child {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+}
+
+.wxe-pill {
+    padding: var(--wxe-accordion-gap) var(--wxe-space-m);
+    line-height: var(--wxe-line-height-text);
+    font-weight: var(--wxe-font-weight-text);
+    gap: var(--wxe-accordion-gap);
+}
+
+.wxe-pill--active,
+.wxe-context-chip.wxe-pill--active,
+.wxe-status-pill.wxe-pill--active {
+    background: var(--wxe-primary-bg-active);
+    color: var(--wxe-primary);
+    border-color: var(--wxe-primary);
+}
+
+/* ── Pill notification dot ──────────────────────────────────────────────── */
+.wxe-pill-notification-dot {
+    position: absolute;
+    top: var(--wxe-space-2xs);
+    right: 0;
+    width: var(--wxe-notification-dot-size);
+    height: var(--wxe-notification-dot-size);
+    border-radius: var(--wxe-border-radius-circle);
+    display: none;
+}
+
+.wxe-pill-notification-dot[data-dot="not_translated"] {
+    display: block;
+    background: var(--wxe-status-not-translated);
+}
+
+.wxe-pill-notification-dot[data-dot="needs_update"] {
+    display: block;
+    background: var(--wxe-status-needs-update);
+}
+
+.wxe-pill-notification-dot[data-dot="complete"],
+.wxe-pill-notification-dot[data-dot="translated"] {
+    display: block;
+    background: var(--wxe-status-translated);
+}
+
+.wxe-pill-notification-dot[data-dot="in_progress"] {
+    display: block;
+    background: var(--wxe-status-in-progress);
+}
+
+.wxe-pill-notification-dot[data-dot="waiting"] {
+    display: block;
+    background: var(--wxe-status-waiting);
+}
+
+.wxe-pill-notification-dot[data-dot="not_translatable"] {
+    display: block;
+    background: var(--wxe-status-not-translatable);
+}
+
+.wxe-pill-notification-dot[data-dot="empty"] {
+    display: block;
+    background: var(--wxe-bg-ultra-light);
+}
+
+/* ── Search inline (replaces pills when open) ──────────────────────────── */
+.wxe-search-inline {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    visibility: hidden;
+    transition: opacity var(--wxe-transition-pills);
+}
+
+.wxe-search-inline--visible {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+    visibility: visible;
+}
+
+.wxe-search-input {
+    width: 100%;
+    padding: var(--wxe-chip-gap) var(--wxe-chip-padding-left);
+    font-size: var(--wxe-font-size-m);
+    font-family: var(--wxe-font-family-etch);
+    background: transparent;
+    border: none;
+    border-bottom: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-input);
+    border-radius: 0;
+    color: var(--wxe-text-color);
+    transition: border-color var(--wxe-transition-default);
+    box-sizing: border-box;
+}
+
+.wxe-search-input::placeholder {
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-search-input:focus-visible {
+    outline: none;
+    border-bottom-color: var(--wxe-primary);
+    box-shadow: var(--wxe-shadow-search-focus);
+}
+
+/* ── Content fade transitions ───────────────────────────────────────────── */
+.wxe-content-fade--in {
+    opacity: 1;
+    transition: opacity var(--wxe-transition-fade-in);
+}
+
+.wxe-content-fade--out {
+    opacity: 0;
+    transition: opacity var(--wxe-transition-fade-out);
+}
+
+/* ── Skeleton loader ────────────────────────────────────────────────────── */
+.wxe-skeleton-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-s);
+    padding: var(--wxe-space-s);
+    margin: 0 var(--wxe-space-l);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-muted);
+    border-radius: var(--wxe-border-radius);
+}
+
+.wxe-skeleton-line {
+    height: var(--wxe-skeleton-line-height);
+    background: var(--wxe-border-color-section);
+    border-radius: var(--wxe-border-radius-skeleton);
+    animation: wxe-pulse var(--wxe-anim-pulse) ease-in-out infinite;
+}
+
+.wxe-skeleton-line--title {
+    width: 40%;
+    height: var(--wxe-skeleton-title-height);
+}
+
+@keyframes wxe-pulse {
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ── Empty / locked states ──────────────────────────────────────────────── */
+.wxe-components-content:has(.wxe-empty-state) {
+    align-content: center;
+    justify-items: center;
+}
+
+.wxe-components-content:has(.wxe-empty-state--filtered) {
+    align-content: start;
+    justify-items: start;
+}
+
+.wxe-empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--wxe-space-m);
+    padding: var(--wxe-space-xl);
+    text-align: center;
+    color: var(--wxe-text-color-muted);
+    font-size: var(--wxe-font-size-m);
+}
+
+.wxe-empty-state--filtered {
+    align-items: start;
+    text-align: start;
+    padding: var(--wxe-space-m) var(--wxe-space-l);
+    font-size: var(--wxe-font-size-s);
+}
+
+/* ── Not translatable info state ─────────────────────────────────────────── */
+.wxe-not-translatable-info {
+    padding: var(--wxe-space-m) var(--wxe-space-l);
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-not-translatable-info p {
+    margin: 0 0 var(--wxe-space-m);
+    font-size: var(--wxe-font-size-m);
+    line-height: 1.5;
+}
+
+.wxe-not-translatable-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    font-size: var(--wxe-font-size-m);
+    color: var(--wxe-accent);
+    text-decoration: none;
+}
+
+.wxe-not-translatable-link span {
+    border-bottom: var(--wxe-border-width) solid currentColor;
+}
+
+.wxe-not-translatable-link svg {
+    flex-shrink: 0;
+}
+
+.wxe-not-translatable-link:hover {
+    opacity: 0.8;
+}
+
+/* ── "this page" badge ───────────────────────────────────────────────────── */
+.wxe-badge--page {
+    background: color-mix(
+        in srgb,
+        var(--wxe-text-color-muted) 12%,
+        transparent
+    );
+    color: var(--wxe-text-color-muted);
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-text-color-muted);
+}
+
+/* ── Status filter pills ─────────────────────────────────────────────────── */
+.wxe-status-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--wxe-space-s);
+    padding: var(--wxe-space-s) var(--wxe-space-l) var(--wxe-space-s);
+}
+
+.wxe-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    padding: var(--wxe-space-xs) var(--wxe-space-m);
+    background: transparent;
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color);
+    border-radius: var(--wxe-border-radius);
+    font-size: var(--wxe-font-size-s);
+    font-weight: var(--wxe-font-weight-text);
+    color: var(--wxe-text-color);
+    cursor: pointer;
+    transition:
+        background var(--wxe-transition-default),
+        color var(--wxe-transition-default),
+        border-color var(--wxe-transition-default);
+    white-space: nowrap;
+}
+
+/* ── Shared "interactive text link" pattern ─────────────────────────────── */
+/* Used by the Status section shortcut (Pending · Done) AND by the footer
+   WPML links. Premium "quiet but discoverable" treatment: dotted underline
+   at rest, color shift + solid underline on hover. No background pills,
+   no chrome — text only. Active state goes bold to communicate selection
+   without competing with the bigger chips below. */
+.wxe-text-link {
+    display: inline;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: var(--wxe-text-color-muted);
+    text-decoration: underline dotted;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+    transition:
+        color var(--wxe-transition-default),
+        text-decoration-color var(--wxe-transition-default);
+}
+
+.wxe-text-link:hover {
+    color: var(--wxe-text-color);
+    text-decoration-color: currentColor;
+    background: transparent;
+}
+
+/* Keyboard focus: shift to text color + solid underline AND keep the
+   global focus ring (do NOT outline:none — that erases the focus
+   indicator for keyboard users). */
+.wxe-text-link:focus-visible {
+    color: var(--wxe-text-color);
+    text-decoration-color: currentColor;
+    background: transparent;
+}
+
+.wxe-text-link:visited {
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-text-link.wxe-pill--active {
+    color: var(--wxe-primary);
+    text-decoration: none;
+    /* Override the filled-pill active style from `.wxe-status-pill.wxe-pill--active`:
+       shortcut buttons are text links, the active state is communicated by the
+       colour shift above (no font-weight change to avoid layout shift). */
+    background: transparent;
+    border-color: transparent;
+}
+
+/* ── Status section: subheader with quiet shortcut + flat chips ─────────── */
+.wxe-filter-subheader-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--wxe-space-s);
+    padding: var(--wxe-space-s) var(--wxe-space-l) var(--wxe-space-xs);
+}
+
+.wxe-filter-subheader-row .wxe-filter-subheader {
+    padding: 0;
+    margin: 0;
+}
+
+.wxe-status-shortcut {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--wxe-space-xs);
+    font-size: var(--wxe-font-size-xs, 11px);
+    line-height: var(--wxe-line-height-compact);
+}
+
+.wxe-status-shortcut__sep {
+    color: var(--wxe-text-color-muted);
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* Disabled shortcut button (e.g. Languages "Clear" with no selection).
+   Stays visible to reserve layout space and advertise the action, but
+   dims and stops responding. `text-decoration: none` removes the dotted
+   underline inherited from `.wxe-text-link` so the "not actionable"
+   hint reads cleanly. */
+.wxe-status-shortcut__btn[disabled],
+.wxe-status-shortcut__btn[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+    text-decoration: none;
+}
+
+/* ── Languages: searchable popover combobox ─────────────────────────────── */
+/* Wrap of compact 1-click chips. Each chip toggles its language filter
+   immediately. Wraps freely; max-block-size + scroll bounds the section
+   for the long-tail case (50+ languages) without ever overflowing the
+   sidebar. For 1–15 languages there is no scroll at all. */
+
+.wxe-lang-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--wxe-space-xs);
+    margin-block-start: 0;
+    padding: var(--wxe-space-s) var(--wxe-space-l) var(--wxe-space-s);
+    /* ~10× space-l = 160px upper bound for the chip wrap before scroll
+       kicks in. Keeps premium 50+ language sites bounded. */
+    max-block-size: calc(var(--wxe-space-l) * 10);
+    overflow-y: auto;
+}
+
+.wxe-chip {
+    display: inline-flex;
+    align-items: center;
+    padding-block: var(--wxe-space-xs);
+    padding-inline: var(--wxe-space-s);
+    background: transparent;
+    border: var(--wxe-border-width) var(--wxe-border-style);
+    border-radius: var(--wxe-border-radius);
+    font-family: var(--wxe-font-family-etch);
+    font-size: var(--wxe-font-size-xs, 11px);
+    font-weight: var(--wxe-font-weight-light);
+    letter-spacing: var(--wxe-letter-spacing);
+    white-space: nowrap;
+    line-height: var(--wxe-line-height-compact);
+    cursor: pointer;
+    transition:
+        background var(--wxe-transition-default),
+        border-color var(--wxe-transition-default),
+        color var(--wxe-transition-default);
+}
+
+.wxe-chip:hover {
+    background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.wxe-lang-chip {
+    gap: var(--wxe-space-xs);
+    border-color: var(--wxe-border-color);
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-lang-chip .wxe-flag {
+    flex-shrink: 0;
+    border-radius: var(--wxe-border-radius-flag);
+}
+
+/* Flags inside the Languages filter chips match the treatment of the
+   flag in the post-meta caption: slightly smaller and dimmer so the
+   saturated flag colours do not dominate the muted chip palette. */
+.wxe-lang-chip .wxe-flag {
+    inline-size: 12px;
+    block-size: auto;
+    opacity: 0.7;
+}
+
+.wxe-lang-chip:hover {
+    color: var(--wxe-text-color);
+}
+
+.wxe-lang-chip:hover .wxe-flag {
+    opacity: 0.9;
+}
+
+.wxe-lang-chip.wxe-pill--active {
+    color: var(--wxe-text-color);
+    border-color: var(--wxe-text-color);
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.wxe-lang-chip--static {
+    cursor: default;
+    pointer-events: none;
+}
+
+.wxe-lang-filter--static {
+    overflow: visible;
+}
+
+/* ── Status filter badges (sidebar legend + filter) ──────────────────────── */
+/* Status chips extend .wxe-chip — only colour palette differs. */
+.wxe-status-filter {
+    /* Inherits all layout from .wxe-chip */
+}
+
+.wxe-status-filter[data-status="translated"] {
+    color: var(--wxe-status-translated);
+    border-color: color-mix(
+        in srgb,
+        var(--wxe-status-translated) 30%,
+        transparent
+    );
+    /* Always wraps to its own line regardless of sidebar width: the
+       100% flex-basis consumes the full row so the chip drops to a
+       fresh line, while `max-inline-size: max-content` keeps the
+       actual chip width snug to its label. Result: "Complete" is
+       visually the terminal state, on its own — and it can never
+       sneak back up to pair with "In Progress" if the sidebar grows. */
+    flex-basis: 100%;
+    max-inline-size: max-content;
+}
+
+.wxe-status-filter[data-status="needs_update"] {
+    color: var(--wxe-status-needs-update);
+    border-color: color-mix(
+        in srgb,
+        var(--wxe-status-needs-update) 30%,
+        transparent
+    );
+}
+
+.wxe-status-filter[data-status="in_progress"] {
+    color: var(--wxe-status-in-progress);
+    border-color: color-mix(
+        in srgb,
+        var(--wxe-status-in-progress) 30%,
+        transparent
+    );
+}
+
+.wxe-status-filter[data-status="waiting"] {
+    color: var(--wxe-status-waiting);
+    border-color: color-mix(
+        in srgb,
+        var(--wxe-status-waiting) 30%,
+        transparent
+    );
+}
+
+.wxe-status-filter[data-status="not_translated"] {
+    color: var(--wxe-status-not-translated);
+    border-color: color-mix(
+        in srgb,
+        var(--wxe-status-not-translated) 30%,
+        transparent
+    );
+}
+
+.wxe-status-filter[data-status="translated"].wxe-status-filter--active {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-translated) 12%,
+        transparent
+    );
+    border-color: var(--wxe-status-translated);
+}
+
+.wxe-status-filter[data-status="needs_update"].wxe-status-filter--active {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-needs-update) 12%,
+        transparent
+    );
+    border-color: var(--wxe-status-needs-update);
+}
+
+.wxe-status-filter[data-status="in_progress"].wxe-status-filter--active {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-in-progress) 12%,
+        transparent
+    );
+    border-color: var(--wxe-status-in-progress);
+}
+
+.wxe-status-filter[data-status="waiting"].wxe-status-filter--active {
+    background: color-mix(in srgb, var(--wxe-status-waiting) 12%, transparent);
+    border-color: var(--wxe-status-waiting);
+}
+
+.wxe-status-filter[data-status="not_translated"].wxe-status-filter--active {
+    background: color-mix(
+        in srgb,
+        var(--wxe-status-not-translated) 12%,
+        transparent
+    );
+    border-color: var(--wxe-status-not-translated);
+}
+
+.wxe-status-pill-dot {
+    width: var(--wxe-pill-dot-size);
+    height: var(--wxe-pill-dot-size);
+    border-radius: var(--wxe-border-radius-circle);
+    flex-shrink: 0;
+}
+
+.wxe-status-pill-dot--success {
+    background: var(--wxe-status-translated);
+}
+
+.wxe-status-pill-dot--warning {
+    background: var(--wxe-status-needs-update);
+}
+
+.wxe-status-pill-dot--danger {
+    background: var(--wxe-status-not-translated);
+}
+
+/* ── Header icon button (Resync All in panel header) ────────────────────── */
+/* Icon-only affordance pinned to the right of the header. State + tooltip
+   carry all the feedback (no visible text). Spins while syncing, shifts
+   color on success/error. */
+.wxe-header-icon-btn {
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: calc(var(--wxe-space-xl) + var(--wxe-space-xs));
+    block-size: calc(var(--wxe-space-xl) + var(--wxe-space-xs));
+    padding: 0;
+    background: transparent;
+    border: var(--wxe-border-width) var(--wxe-border-style) transparent;
+    border-radius: var(--wxe-border-radius);
+    color: var(--wxe-text-color-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition:
+        background var(--wxe-transition-default),
+        border-color var(--wxe-transition-default),
+        color var(--wxe-transition-default);
+}
+
+.wxe-header-icon-btn:hover {
+    color: var(--wxe-text-color);
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.wxe-header-icon-btn:focus-visible {
+    outline: none;
+    border-color: var(--wxe-border-color-input);
+}
+
+/* Resync action lives in the sidebar footer title row (next to the WPML
+   label) as a text-link shortcut, mirroring the title+shortcut pattern
+   used by Languages/Status. Status feedback is delivered via the tooltip
+   (#wxe-resync-tooltip) and a danger color on the link itself when the
+   last run failed. */
+#wxe-resync-all-btn[data-state="error"] {
+    color: var(--e-danger, #f26060);
+}
+
+/* ── Filter sections ─────────────────────────────────────────────────────── */
+.wxe-filter-section {
+    margin-bottom: var(--wxe-space-s);
+}
+
+.wxe-filter-section:last-child {
+    margin-bottom: 0;
+}
+
+.wxe-filter-subheader {
+    margin: 0;
+    padding: var(--wxe-space-s) var(--wxe-space-l) var(--wxe-space-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+}
+
+/* ── Sidebar footer with WPML links ──────────────────────────────────────── */
+.wxe-sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-xs);
+    flex-shrink: 0;
+    padding-block: var(--wxe-space-s);
+    padding-inline: var(--wxe-space-l);
+    border-block-start: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color);
+}
+
+/* Footer title row mirrors the sidebar section header pattern: label group
+   on the inline-start, action shortcut on the inline-end. The label group
+   keeps the WPML word + external-link glyph together; the shortcut group
+   hosts the Resync button. Same shape as Languages/Status headers, so
+   the footer reads as "just another section" of the sidebar. The
+   uppercase + heading typography lives on the label, NOT the row, so the
+   shortcut button on the right keeps its native sentence-case styling. */
+.wxe-sidebar-footer-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wxe-space-s);
+    color: var(--wxe-text-color-muted);
+    line-height: var(--wxe-line-height-compact);
+}
+
+.wxe-sidebar-footer-title__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    min-inline-size: 0;
+    font-size: var(--wxe-font-size-s);
+    font-weight: var(--wxe-font-weight-heading);
+    text-transform: uppercase;
+    letter-spacing: var(--wxe-letter-spacing);
+}
+
+.wxe-sidebar-footer-title__icon {
+    flex-shrink: 0;
+    opacity: 0.6;
+    inline-size: var(--wxe-font-size-xs);
+    block-size: var(--wxe-font-size-xs);
+}
+
+.wxe-sidebar-footer-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--wxe-space-xs);
+    font-size: var(--wxe-font-size-xs, 11px);
+    line-height: var(--wxe-line-height-compact);
+    color: var(--wxe-text-color-muted);
+}
+
+/* .wxe-footer-text-link is an alias of .wxe-text-link — keep both classes
+   on the markup for backward-compat with possible CSS overrides. */
+
+.wxe-footer-sep {
+    color: var(--wxe-text-color-muted);
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* ── Language Switcher section (collapsible accordion) ───────────────────── */
+/* Disabled filter sections (e.g. lang filters on JSON loop pills). */
+.wxe-section--disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.wxe-lang-switcher-section {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.wxe-lang-switcher-accordion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    inline-size: 100%;
+    background: none;
+    border-inline: none;
+    border-block-end: none;
+    color: var(--wxe-text-color-muted);
+    font-family: inherit;
+    font-size: var(--wxe-font-size-s);
+    font-weight: var(--wxe-font-weight-heading);
+    text-transform: uppercase;
+    letter-spacing: var(--wxe-letter-spacing);
+    cursor: pointer;
+    transition: color var(--wxe-transition-default);
+}
+
+.wxe-lang-switcher-accordion:hover {
+    color: var(--wxe-text-color);
+}
+
+.wxe-lang-switcher-accordion-label {
+    min-inline-size: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wxe-lang-switcher-status {
+    margin-inline-start: auto;
+    margin-inline-end: var(--wxe-space-xs);
+    font-size: var(--wxe-font-size-xs);
+    font-weight: var(--wxe-font-weight-normal, 400);
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.5;
+}
+
+.wxe-lang-switcher-chevron {
+    flex-shrink: 0;
+    transition: transform var(--wxe-transition-default);
+}
+
+.wxe-lang-switcher-section--expanded .wxe-lang-switcher-chevron {
+    transform: rotate(90deg);
+}
+
+.wxe-lang-switcher-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-m);
+    padding-block-end: var(--wxe-space-m);
+}
+
+.wxe-lang-switcher-body[hidden] {
+    display: none;
+}
+
+.wxe-lang-switcher-toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-xs);
+}
+
+.wxe-lang-switcher-row {
+    display: flex;
+    height: var(--wxe-lang-row-height);
+    justify-content: space-between;
+    align-items: center;
+    align-self: stretch;
+    padding-inline: calc(var(--wxe-panel-padding) * 2);
+}
+
+.wxe-lang-switcher-label {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color);
+}
+
+.wxe-lang-switcher-desc {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    line-height: 1.4;
+    padding-inline: calc(var(--wxe-panel-padding) * 2);
+}
+
+/* Toggle switch — matches Etch's etch-builder-switch__root */
+.wxe-toggle {
+    display: flex;
+    flex-shrink: 0;
+    width: var(--wxe-toggle-track-w);
+    height: var(--wxe-toggle-track-h);
+    min-width: var(--wxe-toggle-track-w);
+    min-height: var(--wxe-toggle-track-h);
+    padding: var(--wxe-toggle-padding);
+    align-items: center;
+    border-radius: var(--wxe-toggle-track-w);
+    background: var(--wxe-bg-light);
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    box-sizing: content-box;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.wxe-toggle[data-state="checked"] {
+    background: var(--wxe-primary);
+}
+
+.wxe-toggle-thumb {
+    display: block;
+    width: var(--wxe-toggle-thumb-size);
+    height: var(--wxe-toggle-thumb-size);
+    min-width: var(--wxe-toggle-thumb-size);
+    min-height: var(--wxe-toggle-thumb-size);
+    flex-shrink: 0;
+    background-color: var(--wxe-text-color);
+    transition: transform 0.15s ease;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.wxe-toggle-thumb[data-state="checked"] {
+    transform: translateX(
+        calc(
+            var(--wxe-toggle-track-w) - var(--wxe-toggle-thumb-size) - 2 *
+                var(--wxe-toggle-padding)
+        )
+    );
+    background-color: var(--wxe-bg-dark);
+}
+
+/* Copy component button */
+.wxe-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    background: none;
+    border: var(--wxe-border-width) solid var(--wxe-border-color-ultra-light);
+    border-radius: var(--wxe-border-radius);
+    padding: var(--wxe-space-xs) var(--wxe-space-s);
+    cursor: pointer;
+    transition:
+        color var(--wxe-transition-default),
+        border-color var(--wxe-transition-default);
+}
+
+.wxe-secondary-btn:hover:not(:disabled) {
+    color: var(--wxe-text-color);
+    border-color: var(--wxe-border-color);
+}
+
+.wxe-secondary-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.wxe-copy-component-btn {
+    margin-inline: calc(var(--wxe-panel-padding) * 2);
+}
+
+.wxe-copy-component-btn.wxe-copied {
+    color: var(--wxe-primary);
+    border-color: var(--wxe-primary);
+}
+
+/* Loop toggle overlay */
+.wxe-loop-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--wxe-space-m);
+    text-align: center;
+}
+
+.wxe-loop-overlay-title {
+    font-size: var(--wxe-font-size-m);
+    color: var(--wxe-text-color);
+    margin: 0;
+}
+
+.wxe-loop-overlay-desc {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    margin: 0;
+}
+
+.wxe-loop-overlay-actions {
+    display: flex;
+    gap: var(--wxe-space-m);
+    margin-top: var(--wxe-space-s);
+}
+
+.wxe-loop-overlay-btn {
+    font-size: var(--wxe-font-size-s);
+    border-radius: var(--wxe-border-radius);
+    padding: var(--wxe-space-xs) var(--wxe-space-m);
+    cursor: pointer;
+    border: var(--wxe-border-width) solid transparent;
+    transition: opacity var(--wxe-transition-default);
+}
+
+.wxe-loop-overlay-btn:hover {
+    opacity: 0.85;
+}
+
+.wxe-loop-overlay-btn--primary {
+    background: var(--wxe-primary);
+    color: var(--wxe-bg-dark);
+}
+
+.wxe-loop-overlay-btn--secondary {
+    background: none;
+    color: var(--wxe-text-color-muted);
+    border-color: var(--wxe-border-color-ultra-light);
+}
+
+/* ── Loop cards ─────────────────────────────────────────────────────────────── */
+.wxe-loop-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.wxe-loop-link:visited {
+    color: inherit;
+}
+
+.wxe-loop-link svg {
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-loop-status-dot {
+    display: inline-block;
+    width: var(--wxe-notification-dot-size);
+    height: var(--wxe-notification-dot-size);
+    border-radius: var(--wxe-border-radius-circle);
+    margin-left: var(--wxe-space-xs);
+    vertical-align: middle;
+    background: var(--wxe-bg-ultra-light);
+}
+
+.wxe-loop-status-dot[data-dot="not_translated"] {
+    background: var(--wxe-status-not-translated);
+}
+
+.wxe-loop-status-dot[data-dot="translated"] {
+    background: var(--wxe-status-translated);
+}
+
+.wxe-loop-status-dot[data-dot="needs_update"] {
+    background: var(--wxe-status-needs-update);
+}
+
+.wxe-loop-status-dot[data-dot="waiting"] {
+    background: var(--wxe-status-waiting);
+}
+
+.wxe-loop-status-dot[data-dot="empty"] {
+    background: var(--wxe-bg-ultra-light);
+}
+
+.wxe-loop-badge {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-primary);
+    background: var(--wxe-primary-bg-active);
+    padding: var(--wxe-border-width) var(--wxe-space-tooltip-gap);
+    border-radius: var(--wxe-border-radius-pill);
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+/* ── Content footer (license status + BMC) ──────────────────────────────── */
+.wxe-content-footer {
+    position: absolute;
+    bottom: var(--wxe-panel-gap);
+    right: var(--wxe-panel-gap);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--wxe-space-xs);
+    z-index: 2;
+}
+
+.wxe-license-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-space-xs);
+    padding: 0;
+    font-size: var(--wxe-font-size-m);
+    font-family: var(--wxe-font-family-etch);
+    font-weight: var(--wxe-font-weight-text);
+    line-height: var(--wxe-line-height-text);
+    color: var(--wxe-text-color-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.4;
+    transition:
+        opacity var(--wxe-transition-default),
+        color var(--wxe-transition-default);
+}
+
+.wxe-license-btn:hover {
+    opacity: 1;
+    color: var(--wxe-text-color);
+}
+
+.wxe-license-btn svg {
+    flex-shrink: 0;
+}
+
+.wxe-bmc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wxe-accordion-gap);
+    padding: var(--wxe-accordion-gap) var(--wxe-space-m);
+    font-size: var(--wxe-font-size-m);
+    font-family: var(--wxe-font-family-etch);
+    font-weight: var(--wxe-font-weight-text);
+    line-height: var(--wxe-line-height-text);
+    color: var(--wxe-text-color-muted);
+    background: transparent;
+    border: var(--wxe-border-width) var(--wxe-border-style)
+        var(--wxe-border-color-ultra-light);
+    border-radius: var(--wxe-border-radius);
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background var(--wxe-transition-default),
+        color var(--wxe-transition-default),
+        border-color var(--wxe-transition-default);
+}
+
+.wxe-bmc-btn:hover {
+    background: var(--wxe-bg-panel);
+    color: var(--wxe-text-color);
+    border-color: var(--wxe-bg-ultra-light);
+}
+
+.wxe-bmc-btn svg {
+    flex-shrink: 0;
+}
+
+.wxe-license-btn--pro {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 25%, transparent);
+}
+
+.wxe-license-btn--pro:hover {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 50%, transparent);
+}
+
+.wxe-license-btn--expired {
+    color: hsl(15, 95%, 55%);
+    border-color: color-mix(in srgb, hsl(15, 95%, 55%) 25%, transparent);
+}
+
+.wxe-license-btn--expired:hover {
+    color: hsl(15, 95%, 65%);
+    border-color: color-mix(in srgb, hsl(15, 95%, 55%) 40%, transparent);
+}
+
+.wxe-license-btn--supporter {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 25%, transparent);
+}
+
+.wxe-license-btn--supporter:hover {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 50%, transparent);
+}
+
+.wxe-license-btn--default {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 25%, transparent);
+}
+
+.wxe-license-btn--default:hover {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    border-color: color-mix(in srgb, var(--wxe-accent, hsl(145, 90%, 65%)) 50%, transparent);
+}
+
+/* ── License popup ──────────────────────────────────────────────────────── */
+.wxe-license-overlay-active {
+    cursor: pointer;
+}
+
+.wxe-license-popup {
+    background: var(--wxe-bg-panel);
+    border: var(--wxe-border);
+    border-radius: calc(var(--wxe-border-radius) * 2);
+    max-width: 360px;
+    width: 100%;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-m);
+}
+
+.wxe-license-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--wxe-space-m) var(--wxe-space-l);
+    border-bottom: var(--wxe-border);
+}
+
+.wxe-license-popup-title {
+    font-size: var(--wxe-font-size-l);
+    font-weight: var(--wxe-font-weight-heading);
+    color: var(--wxe-text-color);
+}
+
+.wxe-license-popup-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--wxe-text-color-muted);
+    cursor: pointer;
+    padding: var(--wxe-space-xs);
+    border-radius: var(--wxe-border-radius);
+    transition: color var(--wxe-transition-default);
+}
+
+.wxe-license-popup-close:hover {
+    color: var(--wxe-text-color);
+}
+
+.wxe-license-popup-body {
+    padding: 0 var(--wxe-space-l) var(--wxe-space-m);
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-m);
+}
+
+.wxe-license-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-s);
+}
+
+.wxe-license-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--wxe-space-m);
+}
+
+.wxe-license-info-label {
+    font-size: var(--wxe-font-size-m);
+    color: var(--wxe-text-color-muted);
+}
+
+.wxe-license-info-value {
+    font-size: var(--wxe-font-size-m);
+    color: var(--wxe-text-color);
+    text-align: right;
+}
+
+.wxe-license-info-value--pro {
+    color: var(--wxe-accent, hsl(145, 90%, 65%));
+    font-weight: var(--wxe-font-weight-heading);
+}
+
+.wxe-license-info-value--expired {
+    color: hsl(15, 95%, 55%);
+    font-weight: var(--wxe-font-weight-heading);
+}
+
+.wxe-license-info-value--mono {
+    font-family: monospace;
+    font-size: var(--wxe-font-size-s);
+    opacity: 0.7;
+}
+
+.wxe-license-actions {
+    display: flex;
+    gap: var(--wxe-space-s);
+    align-items: center;
+}
+
+.wxe-license-tier-badge {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+}
+
+.wxe-license-activate-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wxe-space-s);
+}
+
+.wxe-license-result {
+    font-size: var(--wxe-font-size-s);
+    color: var(--wxe-text-color-muted);
+    min-height: 1.2em;
+}
+
+.wxe-license-result--error {
+    color: hsl(15, 95%, 55%);
+}
+
+.wxe-license-popup-footer {
+    padding: var(--wxe-space-s) var(--wxe-space-l);
+    border-top: var(--wxe-border);
+    display: flex;
+    align-items: center;
+    gap: var(--wxe-space-s);
+    justify-content: center;
+}
+
+/* ── Language rows ───────────────────────────────────────────────────────── */
+.wxe-component-lang-row,
+.wxe-item-lang-row {
+    cursor: default;
+    border-left: var(--wxe-border-width-lang-row) solid transparent;
+    border-radius: calc(var(--wxe-border-radius) * 0.55);
+    background: var(--wxe-bg-panel);
+    transition:
+        background var(--wxe-transition-default),
+        border-left-color var(--wxe-transition-default);
+}
+
+.wxe-component-lang-row[data-status="not_translated"],
+.wxe-item-lang-row[data-status="not_translated"] {
+    border-left-color: var(--wxe-status-not-translated);
+}
+
+.wxe-component-lang-row[data-status="needs_update"],
+.wxe-item-lang-row[data-status="needs_update"] {
+    border-left-color: var(--wxe-status-needs-update);
+}
+
+.wxe-component-lang-row[data-status="in_progress"],
+.wxe-item-lang-row[data-status="in_progress"] {
+    border-left-color: var(--wxe-status-in-progress);
+}
+
+.wxe-component-lang-row[data-status="translated"],
+.wxe-item-lang-row[data-status="translated"] {
+    border-left-color: var(--wxe-status-translated);
+}
+
+.wxe-component-lang-row[data-status="waiting"],
+.wxe-item-lang-row[data-status="waiting"] {
+    border-left-color: var(--wxe-status-waiting);
+}
+
+.wxe-component-lang-row[data-status="not_translatable"],
+.wxe-item-lang-row[data-status="not_translatable"] {
+    border-left-color: var(--wxe-status-not-translatable);
+}
+
+.wxe-component-lang-row:hover,
+.wxe-item-lang-row:hover {
+    background: var(--wxe-row-hover-bg);
+}
+
+.wxe-item-lang-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wxe-space-m);
+    padding: calc(var(--wxe-space-xs) / 2) calc(var(--wxe-space-xs) / 2) calc(var(--wxe-space-xs) / 2) var(--wxe-space-s);
+}
+
+/* ── ATE button (arrow) ─────────────────────────────────────────────────── */
+.wxe-ate-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--wxe-space-xs);
+    min-width: 28px;
+    min-height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--wxe-border-radius);
+    cursor: pointer;
+    color: var(--wxe-text-color-muted);
+    opacity: 0.4;
+    transition:
+        opacity var(--wxe-transition-default),
+        color var(--wxe-transition-default),
+        background var(--wxe-transition-default);
+}
+
+.wxe-component-lang-row:hover .wxe-ate-btn,
+.wxe-item-lang-row:hover .wxe-ate-btn {
+    opacity: 0.6;
+    color: var(--wxe-text-color);
+}
+
+.wxe-ate-btn:hover {
+    opacity: 1 !important;
+    color: var(--wxe-text-color) !important;
+    background: color-mix(in srgb, currentColor 10%, transparent) !important;
+}
+
+.wxe-row-arrow {
+    flex-shrink: 0;
+}
+
+/* ── Retry link ─────────────────────────────────────────────────────────── */
+.wxe-retry-link {
+    background: none;
+    border: none;
+    color: var(--wxe-primary);
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+}

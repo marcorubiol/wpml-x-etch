@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wpml-config>
+  <gutenberg-blocks>
+
+    <!-- Etch manages its own string registration via wpml_page_builder_register_strings.
+         All blocks are set to translate="0" to prevent WPML's auto-extraction.
+         See StringHandler::register_post_strings(). -->
+    <gutenberg-block type="etch/text" translate="0" />
+    <gutenberg-block type="etch/component" translate="0" />
+    <gutenberg-block type="etch/element" translate="0" />
+    <gutenberg-block type="etch/loop" translate="0" />
+    <gutenberg-block type="etch/svg" translate="0" />
+    <gutenberg-block type="etch/condition" translate="0" />
+
+  </gutenberg-blocks>
+</wpml-config>

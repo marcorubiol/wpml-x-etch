@@ -1,0 +1,51 @@
+/**
+ * Zero WPML × Etch - Supporter Mode
+ * 
+ * This file hides all locked features completely for development/demo purposes.
+ * Use this mode when showing screenshots or demos to hide premium features.
+ * 
+ * @package WpmlXEtch
+ */
+
+/* ── Hide locked pills completely ───────────────────────────────────────── */
+.wxe-pill--locked {
+    display: none !important;
+}
+
+/* ── Hide locked context chip completely ────────────────────────────────── */
+.wxe-context-chip--locked {
+    display: none !important;
+}
+
+/* ── Hide locked search toggle completely ──────────────────────────────── */
+.wxe-search-toggle--locked {
+    display: none !important;
+}
+
+/* ── Hide locked filter sections completely ─────────────────────────────── */
+.wxe-filter-section--locked {
+    display: none !important;
+}
+
+/* ── Hide locked sidebar header completely ──────────────────────────────── */
+.wxe-sidebar-header-locked {
+    display: none !important;
+}
+
+/* ── Hide all lock icons ────────────────────────────────────────────────── */
+.wxe-pill-lock,
+.wxe-search-lock,
+.wxe-sidebar-lock {
+    display: none !important;
+}
+
+/* ── Hide locked AI section and sparkle buttons ────────────────────────── */
+.wxe-ai-settings-section--locked,
+.wxe-ai-btn--locked {
+    display: none !important;
+}
+
+/* ── Hide license button when no features are locked ───────────────────── */
+.wxe-license-btn--default {
+    display: none !important;
+}

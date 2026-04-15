@@ -1,0 +1,189 @@
+<style>
+    /* ── WxE Language Switcher ─────────────────────────────── */
+
+    .wxe-lang {
+        --list-item-gap: 0.5em;
+        --list-gap: 0.5em;
+        display: flex;
+        align-items: center;
+    }
+
+    .wxe-lang__button {
+        display: flex;
+        align-items: center;
+        gap: var(--list-item-gap);
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        anchor-name: --wxe-lang-trigger;
+    }
+
+    .wxe-lang__flag {
+        display: block;
+        width: 1rem;
+        height: auto;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+    }
+
+    .wxe-lang__label {
+        white-space: nowrap;
+    }
+
+    .wxe-lang__arrow {
+        width: 1em;
+        height: auto;
+        aspect-ratio: 1;
+        transition: rotate 0.2s ease;
+
+        [popovertarget]:has(+ [popover]:popover-open) & {
+            rotate: 180deg;
+        }
+    }
+
+    /* ── List Wrapper ─────────────────────────────────────── */
+
+    .wxe-lang__list-wrapper {
+        border: none;
+        color: inherit;
+    }
+
+    .wxe-lang__list-wrapper--dropdown {
+        position-anchor: --wxe-lang-trigger;
+        position-area: bottom span-right;
+        position-try-fallbacks: flip-block;
+        inset: unset;
+        top: anchor(bottom, 100%);
+        left: anchor(left, 0);
+
+        @supports not (anchor-name: --x) {
+            & {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                min-width: 100%;
+            }
+        }
+    }
+
+    .wxe-lang__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--list-gap);
+        list-style: none;
+    }
+
+    .wxe-lang__list--horizontal {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .wxe-lang__list-item {
+        display: flex;
+    }
+
+    .wxe-lang__link {
+        display: flex;
+        align-items: center;
+        gap: var(--list-item-gap);
+    }
+</style>
+
+<!--
+  ══════════════════════════════════════════════════════════════
+  WxE Language Switcher — Unified Component
+  ══════════════════════════════════════════════════════════════
+
+  PROPS:
+  ┌──────────────────────┬──────────┬─────────────────────────────────┬───────────┐
+  │ Name                 │ Type     │ Options / Children              │ Default   │
+  ├──────────────────────┼──────────┼─────────────────────────────────┼───────────┤
+  │ horizontalList       │ boolean  │                                 │ true      │
+  │ hideCurrentLanguage  │ boolean  │                                 │ true      │
+  │ hideFlag             │ boolean  │                                 │ true      │
+  │ buttonLabel          │ group    │                                 │           │
+  │   customButtonLabel  │ boolean  │                                 │ false     │
+  │   label              │ string   │ (visible if customButtonLabel)  │ Language  │
+  │ arrow                │ group    │                                 │           │
+  │   hideArrow          │ boolean  │                                 │ false     │
+  │   customArrow        │ boolean  │ (visible if !hideArrow)         │ true      │
+  │   arrowSvg           │ image    │ (visible if customArrow)        │           │
+  └──────────────────────┴──────────┴─────────────────────────────────┴───────────┘
+
+  LOOP (wpmlLanguages):
+  Each item: code, native_name, translated_name, country_flag_url, url, active, language_code
+-->
+
+<nav aria-label="Language" class="wxe-lang">
+
+    <!-- ── Dropdown Mode ── {#if !props.horizontalList} -->
+
+    <!-- Trigger: loop wpmlLanguages, show active language only -->
+    <button popovertarget="wxe-lang" class="wxe-lang__button">
+        <!-- {#if !props.hideFlag && !props.buttonLabel.customButtonLabel} -->
+        <img src="{item.country_flag_url}" alt="" class="wxe-lang__flag" />
+        <!-- {/if} -->
+
+        <!-- {#if !props.buttonLabel.customButtonLabel} -->
+        <span class="wxe-lang__label">{item.native_name}</span>
+        <!-- {/if} -->
+
+        <!-- {#if props.buttonLabel.customButtonLabel} -->
+        <span class="wxe-lang__label">{props.buttonLabel.label}</span>
+        <!-- {/if} -->
+
+        <!-- {#if !props.arrow.hideArrow && !props.arrow.customArrow} -->
+        <svg class="wxe-lang__arrow" xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" stroke-miterlimit="16" />
+        </svg>
+        <!-- {/if} -->
+
+        <!-- {#if !props.arrow.hideArrow && props.arrow.customArrow} -->
+        <svg src="{props.arrow.arrowSvg}" class="wxe-lang__arrow" />
+        <!-- {/if} -->
+    </button>
+
+    <!-- Dropdown popover -->
+    <div id="wxe-lang" popover class="wxe-lang__list-wrapper wxe-lang__list-wrapper--dropdown">
+        <ul class="wxe-lang__list" role="list">
+            <!-- {#loop wpmlLanguages as item} -->
+            <!-- {#if item.active != "1" || !props.hideCurrentLanguage} -->
+            <li class="wxe-lang__list-item {item.active.equal('1', 'wxe-lang__item--active', '')}">
+                <a href="{item.url}" lang="{item.language_code}" hreflang="{item.language_code}"
+                    aria-current="{item.active.equal('1', 'page')}" class="wxe-lang__link">
+                    <!-- {#if !props.hideFlag} -->
+                    <img src="{item.country_flag_url}" alt="" class="wxe-lang__flag" />
+                    <!-- {/if} -->
+                    <span class="wxe-lang__label">{item.native_name}</span>
+                </a>
+            </li>
+            <!-- {/if} -->
+            <!-- {/loop} -->
+        </ul>
+    </div>
+
+    <!-- {#else} ── Horizontal List Mode ── -->
+
+    <div id="wxe-lang" class="wxe-lang__list-wrapper">
+        <ul class="wxe-lang__list wxe-lang__list--horizontal" role="list">
+            <!-- {#loop wpmlLanguages as item} -->
+            <!-- {#if item.active != "1" || !props.hideCurrentLanguage} -->
+            <li class="wxe-lang__list-item {item.active.equal('1', 'wxe-lang__item--active', '')}">
+                <a href="{item.url}" lang="{item.language_code}" hreflang="{item.language_code}"
+                    aria-current="{item.active.equal('1', 'page')}" class="wxe-lang__link">
+                    <!-- {#if !props.hideFlag} -->
+                    <img src="{item.country_flag_url}" alt="" class="wxe-lang__flag" />
+                    <!-- {/if} -->
+                    <span class="wxe-lang__label">{item.native_name}</span>
+                </a>
+            </li>
+            <!-- {/if} -->
+            <!-- {/loop} -->
+        </ul>
+    </div>
+
+    <!-- {/if} -->
+
+</nav>
