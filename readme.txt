@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,10 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: fatal TypeError on PHP 8.x when loop items use non-numeric array keys (e.g. Etch 0.0.7). Removed arithmetic on array index in LoopTranslator.
+* Note: loop string names have changed — existing loop translations will need to be re-translated after updating. Run Force Sync and re-translate any loop strings.
 
 = 1.0.1 =
 * Fix: preserve significant whitespace in etch/text strings (trailing spaces before inline links were trimmed during registration, causing translations not to match at render time).

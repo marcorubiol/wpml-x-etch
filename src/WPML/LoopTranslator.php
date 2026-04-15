@@ -322,7 +322,7 @@ class LoopTranslator implements SubscriberInterface {
 							$value = $translation_map[ $name ] ?? $value;
 						}
 					} elseif ( is_array( $value ) ) {
-						$value = $this->translate_items( $value, $loop_id, $loop_name, $translatable_fields, $translation_map, $prefix . ( $index + 1 ) . '.' . $field . '.' );
+						$value = $this->translate_items( $value, $loop_id, $loop_name, $translatable_fields, $translation_map, $prefix . $index . '.' . $field . '.' );
 					}
 				}
 				unset( $value );
@@ -365,7 +365,7 @@ class LoopTranslator implements SubscriberInterface {
 							$callback( $name, $value );
 						}
 					} elseif ( is_array( $value ) ) {
-						$this->walk_items( $value, $loop_id, $loop_name, $prefix . ( $index + 1 ) . '.' . $field . '.', $translatable_fields, $callback );
+						$this->walk_items( $value, $loop_id, $loop_name, $prefix . $index . '.' . $field . '.', $translatable_fields, $callback );
 					}
 				}
 			} elseif ( is_string( $item ) && '' !== $item ) {
