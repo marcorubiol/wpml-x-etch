@@ -67,7 +67,7 @@ class ComponentParser {
 				if ( is_string( $text ) && '' !== trim( $text )
 					&& ! preg_match( \WpmlXEtch\Core\Plugin::DYNAMIC_EXPR_PATTERN, trim( $text ) )
 					&& ! preg_match( '/^[a-zA-Z_]+\.[a-zA-Z_.]+$/', trim( $text ) ) ) {
-					$values[] = trim( $text );
+					$values[] = $text;
 				}
 			}
 
