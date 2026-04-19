@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,14 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.3 =
+* Refactor: remove LicenseManager singleton — now injected via constructor like all other services.
+* Refactor: replace closures in hook registrations with named methods (exclude_translation_priority_taxonomy, do_register_ui_strings).
+* Refactor: inject PanelConfig into AiTranslationHandler instead of instantiating internally.
+* Refactor: replace get_posts "s" search in backfill_component_refs with direct $wpdb query for better activation performance.
+* Refactor: PanelConfig::get_locking_mode() is now an instance method — LicenseManager injected via constructor.
+* Dev: add PHPDoc to all Logger methods.
 
 = 1.0.2 =
 * Fix: fatal TypeError on PHP 8.x when loop items use non-numeric array keys (e.g. Etch 0.0.7). Removed arithmetic on array index in LoopTranslator.

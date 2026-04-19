@@ -23,10 +23,12 @@ class TranslationRoutes extends BaseRoute {
 
 	private readonly BuilderPanel $panel;
 	private readonly AiTranslationHandler $ai_handler;
+	private readonly LicenseManager $license_manager;
 
-	public function __construct( BuilderPanel $panel, AiTranslationHandler $ai_handler ) {
-		$this->panel      = $panel;
-		$this->ai_handler = $ai_handler;
+	public function __construct( BuilderPanel $panel, AiTranslationHandler $ai_handler, LicenseManager $license_manager ) {
+		$this->panel           = $panel;
+		$this->ai_handler      = $ai_handler;
+		$this->license_manager = $license_manager;
 	}
 
 	protected function get_routes(): array {
@@ -368,7 +370,7 @@ class TranslationRoutes extends BaseRoute {
 			return new WP_Error( 'rate_limited', __( 'Too many attempts. Please wait a moment.', 'wpml-x-etch' ), array( 'status' => 429 ) );
 		}
 
-		$result = LicenseManager::get_instance()->activate(
+		$result = $this->license_manager->activate(
 			(string) $request->get_param( 'key' )
 		);
 
@@ -380,13 +382,13 @@ class TranslationRoutes extends BaseRoute {
 			return new WP_Error( 'rate_limited', __( 'Too many attempts. Please wait a moment.', 'wpml-x-etch' ), array( 'status' => 429 ) );
 		}
 
-		$result = LicenseManager::get_instance()->deactivate();
+		$result = $this->license_manager->deactivate();
 
 		return is_wp_error( $result ) ? $result : new WP_REST_Response( array( 'deactivated' => true ), 200 );
 	}
 
 	public function license_status( WP_REST_Request $request ): WP_REST_Response {
-		return new WP_REST_Response( LicenseManager::get_instance()->get_status(), 200 );
+		return new WP_REST_Response( $this->license_manager->get_status(), 200 );
 	}
 
 	/**

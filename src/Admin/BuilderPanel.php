@@ -39,8 +39,9 @@ class BuilderPanel implements SubscriberInterface {
 	private readonly MetaSync $meta_sync;
 	private readonly ResyncHandler $resync_handler;
 	private readonly AiSettings $ai_settings;
+	private readonly LicenseManager $license_manager;
 
-	public function __construct( MetaSync $meta_sync, TranslationStatusResolver $status_resolver, TranslationDataQuery $data_query, TranslationJobManager $job_manager, PanelConfig $config, ResyncHandler $resync_handler, AiSettings $ai_settings ) {
+	public function __construct( MetaSync $meta_sync, TranslationStatusResolver $status_resolver, TranslationDataQuery $data_query, TranslationJobManager $job_manager, PanelConfig $config, ResyncHandler $resync_handler, AiSettings $ai_settings, LicenseManager $license_manager ) {
 		$this->meta_sync       = $meta_sync;
 		$this->status_resolver = $status_resolver;
 		$this->data_query      = $data_query;
@@ -48,6 +49,7 @@ class BuilderPanel implements SubscriberInterface {
 		$this->config          = $config;
 		$this->resync_handler  = $resync_handler;
 		$this->ai_settings     = $ai_settings;
+		$this->license_manager = $license_manager;
 	}
 
 	public static function getSubscribedEvents(): array {
@@ -231,7 +233,7 @@ class BuilderPanel implements SubscriberInterface {
 		);
 
 		// Locking assets (conditionally loaded based on mode).
-		$locking_mode = PanelConfig::get_locking_mode();
+		$locking_mode = $this->config->get_locking_mode();
 		// Valid modes: 'free', 'supporter', 'pro'
 
 		if ( 'free' === $locking_mode ) {
@@ -308,7 +310,7 @@ class BuilderPanel implements SubscriberInterface {
 			'aiConfigured'     => $this->ai_settings->is_configured(),
 			'aiVerified'       => $this->ai_settings->is_verified(),
 			'aiAccess'         => ! empty( $this->config->get_pill_access()['ai'] ),
-			'licenseStatus'    => LicenseManager::get_instance()->get_status(),
+			'licenseStatus'    => $this->license_manager->get_status(),
 			'messages'         => $this->get_localized_messages(),
 		) );
 	}

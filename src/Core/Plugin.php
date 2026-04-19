@@ -27,6 +27,7 @@ use WpmlXEtch\Admin\HealthCheck;
 use WpmlXEtch\AI\AiSettings;
 use WpmlXEtch\AI\AiClient;
 use WpmlXEtch\AI\AiTranslationHandler;
+use WpmlXEtch\License\LicenseManager;
 use WpmlXEtch\RestApi\TranslationRoutes;
 
 /**
@@ -56,6 +57,7 @@ class Plugin
     private readonly BuilderPanel $builder_panel;
     private readonly DynamicLanguageData $dynamic_language_data;
     private readonly AiTranslationHandler $ai_handler;
+    private readonly LicenseManager $license_manager;
 
     /** @var SubscriberInterface[] */
     private array $subscribers = [];
@@ -76,7 +78,8 @@ class Plugin
         $data_query       = new TranslationDataQuery( $this->component_parser );
         $job_manager      = new TranslationJobManager();
         $status_resolver  = new TranslationStatusResolver( $data_query, $job_manager );
-        $panel_config = new PanelConfig();
+        $this->license_manager = new LicenseManager();
+        $panel_config = new PanelConfig( $this->license_manager );
         $resync_handler = new ResyncHandler(
             $this->component_parser,
             $this->string_handler,
@@ -93,8 +96,9 @@ class Plugin
             $ai_client,
             $resync_handler,
             $job_manager,
+            $panel_config,
         );
-        $this->builder_panel = new BuilderPanel( $this->meta_sync, $status_resolver, $data_query, $job_manager, $panel_config, $resync_handler, $ai_settings );
+        $this->builder_panel = new BuilderPanel( $this->meta_sync, $status_resolver, $data_query, $job_manager, $panel_config, $resync_handler, $ai_settings, $this->license_manager );
         $this->dynamic_language_data = new DynamicLanguageData();
 
         // Update checker runs regardless of Etch/WPML being active.
@@ -191,12 +195,7 @@ class Plugin
         );
 
         // Exclude translation_priority taxonomy from ATE translation jobs.
-        add_filter( 'get_translatable_taxonomies', function ( $taxonomies ) {
-            if ( isset( $taxonomies['taxs'] ) && is_array( $taxonomies['taxs'] ) ) {
-                $taxonomies['taxs'] = array_diff( $taxonomies['taxs'], array( 'translation_priority' ) );
-            }
-            return $taxonomies;
-        } );
+        add_filter( 'get_translatable_taxonomies', array( $this, 'exclude_translation_priority_taxonomy' ) );
 
         // UI strings are static — only re-register on version change.
         $this->maybe_register_ui_strings();
@@ -266,7 +265,7 @@ class Plugin
      */
     public function register_rest_routes(): void
     {
-        $routes = new TranslationRoutes($this->builder_panel, $this->ai_handler);
+        $routes = new TranslationRoutes( $this->builder_panel, $this->ai_handler, $this->license_manager );
         $routes->register();
     }
 
@@ -289,39 +288,40 @@ class Plugin
      */
     private function backfill_component_refs(): void
     {
-        $page = 1;
+        global $wpdb;
+
+        $offset = 0;
+        $batch  = 100;
 
         do {
-            $posts = get_posts([
-                "post_type"      => "any",
-                "post_status"    => "publish",
-                "posts_per_page" => 100,
-                "paged"          => $page,
-                "fields"         => "ids",
-                "s"              => "<!-- wp:etch/",
-            ]);
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $posts = $wpdb->get_results( $wpdb->prepare(
+                "SELECT ID, post_content, post_type FROM {$wpdb->posts}
+                 WHERE post_status = 'publish'
+                   AND post_type != 'wp_block'
+                   AND post_content LIKE %s
+                 LIMIT %d OFFSET %d",
+                '%' . $wpdb->esc_like( '<!-- wp:etch/' ) . '%',
+                $batch,
+                $offset
+            ) );
 
-            foreach ($posts as $post_id) {
-                $post = get_post($post_id);
-                if (!$post || "wp_block" === $post->post_type) {
-                    continue;
-                }
+            foreach ( $posts as $post ) {
+                $blocks = parse_blocks( $post->post_content );
+                $refs   = $this->component_parser->extract_component_refs( $blocks );
 
-                $blocks = parse_blocks($post->post_content);
-                $refs = $this->component_parser->extract_component_refs($blocks);
-
-                if (!empty($refs)) {
+                if ( ! empty( $refs ) ) {
                     update_post_meta(
-                        $post_id,
-                        "_zs_wxe_component_refs",
-                        wp_json_encode(array_values($refs)),
+                        (int) $post->ID,
+                        '_zs_wxe_component_refs',
+                        wp_json_encode( array_values( $refs ) ),
                     );
                 } else {
-                    delete_post_meta($post_id, "_zs_wxe_component_refs");
+                    delete_post_meta( (int) $post->ID, '_zs_wxe_component_refs' );
                 }
             }
 
-            $page++;
+            $offset += $batch;
         } while ( ! empty( $posts ) );
     }
 
@@ -340,15 +340,32 @@ class Plugin
             return;
         }
 
-        $string_handler = $this->string_handler;
-        add_action(
-            "init",
-            function () use ($string_handler) {
-                $string_handler->register_ui_strings();
-                update_option("zs_wxe_ui_strings_version", self::version());
-            },
-            30,
-        );
+        add_action( 'init', array( $this, 'do_register_ui_strings' ), 30 );
+    }
+
+    /**
+     * Exclude translation_priority from translatable taxonomies.
+     *
+     * @param mixed $taxonomies Taxonomy array from WPML.
+     * @return mixed
+     */
+    public function exclude_translation_priority_taxonomy( mixed $taxonomies ): mixed
+    {
+        if ( isset( $taxonomies['taxs'] ) && is_array( $taxonomies['taxs'] ) ) {
+            $taxonomies['taxs'] = array_diff( $taxonomies['taxs'], array( 'translation_priority' ) );
+        }
+        return $taxonomies;
+    }
+
+    /**
+     * Register UI strings with WPML and update version flag.
+     *
+     * @return void
+     */
+    public function do_register_ui_strings(): void
+    {
+        $this->string_handler->register_ui_strings();
+        update_option( 'zs_wxe_ui_strings_version', self::version() );
     }
 
     /**

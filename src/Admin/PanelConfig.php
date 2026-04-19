@@ -13,12 +13,18 @@ use WpmlXEtch\License\LicenseManager;
 
 class PanelConfig {
 
+	private readonly LicenseManager $license_manager;
+
+	public function __construct( LicenseManager $license_manager ) {
+		$this->license_manager = $license_manager;
+	}
+
 	/** Resolve the active locking mode: constant → license → filter default. */
-	public static function get_locking_mode(): string {
+	public function get_locking_mode(): string {
 		if ( defined( 'ZS_WXE_LOCKING_MODE' ) ) {
 			return ZS_WXE_LOCKING_MODE;
 		}
-		$license_tier = LicenseManager::get_instance()->validate_cached();
+		$license_tier = $this->license_manager->validate_cached();
 		if ( $license_tier ) {
 			return $license_tier;
 		}
@@ -27,7 +33,7 @@ class PanelConfig {
 
 	/** Pill ID → unlocked. Filterable via `zs_wxe_pill_access`. */
 	public function get_pill_access(): array {
-		$locking_mode = self::get_locking_mode();
+		$locking_mode = $this->get_locking_mode();
 
 		$custom_cpts = $this->get_translated_custom_post_types();
 
@@ -105,7 +111,7 @@ class PanelConfig {
 	public function get_content_type_pills(): array {
 		$access = $this->get_pill_access();
 
-		$locking_mode = self::get_locking_mode();
+		$locking_mode = $this->get_locking_mode();
 		$is_unlocked = in_array( $locking_mode, array( 'pro', 'supporter' ), true );
 
 		$pills = array(

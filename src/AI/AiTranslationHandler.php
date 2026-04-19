@@ -27,6 +27,7 @@ class AiTranslationHandler {
 	private readonly AiClient $client;
 	private readonly ResyncHandler $resync_handler;
 	private readonly TranslationJobManager $job_manager;
+	private readonly PanelConfig $config;
 
 	public function __construct(
 		ComponentParser $parser,
@@ -35,7 +36,8 @@ class AiTranslationHandler {
 		AiSettings $settings,
 		AiClient $client,
 		ResyncHandler $resync_handler,
-		TranslationJobManager $job_manager
+		TranslationJobManager $job_manager,
+		PanelConfig $config
 	) {
 		$this->parser          = $parser;
 		$this->string_handler  = $string_handler;
@@ -44,6 +46,7 @@ class AiTranslationHandler {
 		$this->client          = $client;
 		$this->resync_handler  = $resync_handler;
 		$this->job_manager     = $job_manager;
+		$this->config          = $config;
 	}
 
 	/**
@@ -51,8 +54,7 @@ class AiTranslationHandler {
 	 */
 	public function translate( int $post_id, string $target_lang, int $component_id = 0, bool $force = false ): array|WP_Error {
 		// Gate check.
-		$config = new PanelConfig();
-		$access = $config->get_pill_access();
+		$access = $this->config->get_pill_access();
 		if ( empty( $access['ai'] ) ) {
 			return new WP_Error( 'license_required', 'AI translation requires Pro license', array( 'status' => 403 ) );
 		}
@@ -232,8 +234,7 @@ class AiTranslationHandler {
 	 * Translate a JSON loop's strings to a single language via AI.
 	 */
 	public function translate_loop( string $loop_id, string $target_lang, bool $force = false ): array|\WP_Error {
-		$config = new PanelConfig();
-		$access = $config->get_pill_access();
+		$access = $this->config->get_pill_access();
 		if ( empty( $access['ai'] ) ) {
 			return new \WP_Error( 'license_required', 'AI translation requires Pro license', array( 'status' => 403 ) );
 		}

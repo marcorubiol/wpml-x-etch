@@ -22,15 +22,6 @@ class LicenseManager {
 	/** Grace period after a revalidation failure before falling back. */
 	private const GRACE_PERIOD = DAY_IN_SECONDS;
 
-	private static ?self $instance = null;
-
-	public static function get_instance(): self {
-		if ( null === self::$instance ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
-
 	/**
 	 * Activate a license key against LemonSqueezy.
 	 *
