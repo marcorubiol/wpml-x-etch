@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,7 +39,7 @@ Without this plugin, WPML does not see Etch content — templates break, compone
 2. Activate.
 3. Ensure Etch and WPML are both active.
 
-Install before starting translations. If you already tried translating Etch content without this plugin, cancel stuck jobs in WPML and re-send them.
+Recommended: install before creating translation jobs. If WPML jobs are already stuck "In Progress" from prior attempts without the plugin, cancel them in WPML Translation Management and re-send.
 
 == Frequently Asked Questions ==
 
@@ -56,6 +56,11 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.5 =
+* Fix: Languages filter in the sidebar rendered flag + code as plain text (no pill outline) when only one secondary language was configured. Static single-language chip now includes the base `.wxe-chip` class so it inherits pill shape like the multi-language button variant.
+* Improvement: "View details" modal in the Plugins screen now shows the changelog of the available remote version, not the locally installed one. `UpdateChecker` fetches `readme.txt` as a standalone release asset (published alongside the zip) and parses it for the modal. Falls back to the local file if the asset is missing.
+* Docs: narrow the "stuck jobs" install warning in readme and AGENTS — since v1.0.4 auto-resolves orphan "Complete" rows, only "In Progress" ghosts still require manual cancel + re-send.
 
 = 1.0.4 =
 * Fix: panel no longer shows "Complete" on pages that have no real translated post. Ghost rows in WPML's icl_translation_status (left over from translation attempts that predated this plugin, or from aborted jobs) are now detected at read time and reported as "Not Translated", matching WPML's own Pages-list view.

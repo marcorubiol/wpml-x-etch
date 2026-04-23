@@ -14,10 +14,11 @@ namespace WpmlXEtch\Core;
 
 class UpdateChecker implements SubscriberInterface {
 
-	private const GITHUB_REPO  = 'marcorubiol/wpml-x-etch';
-	private const PLUGIN_URL   = 'https://wpml-x-etch.zerosense.studio/';
-	private const CACHE_KEY    = 'zs_wxe_github_release';
-	private const CACHE_TTL    = 12 * HOUR_IN_SECONDS;
+	private const GITHUB_REPO      = 'marcorubiol/wpml-x-etch';
+	private const PLUGIN_URL       = 'https://wpml-x-etch.zerosense.studio/';
+	private const CACHE_KEY        = 'zs_wxe_github_release';
+	private const CACHE_KEY_README = 'zs_wxe_github_readme';
+	private const CACHE_TTL        = 12 * HOUR_IN_SECONDS;
 
 	private string $plugin_file;
 	private string $plugin_slug;
@@ -108,7 +109,7 @@ class UpdateChecker implements SubscriberInterface {
 			'download_link' => $release['zip_url'],
 			'sections'      => array(
 				'description' => 'Integration bridge between Etch page builder and WPML Multilingual CMS.',
-				'changelog'   => $this->get_changelog_html(),
+				'changelog'   => $this->get_changelog_html( $release ),
 			),
 		);
 	}
@@ -141,6 +142,7 @@ class UpdateChecker implements SubscriberInterface {
 		}
 
 		delete_transient( self::CACHE_KEY );
+		delete_transient( self::CACHE_KEY_README );
 		delete_site_transient( 'update_plugins' );
 		wp_clean_plugins_cache( true );
 
@@ -172,16 +174,66 @@ class UpdateChecker implements SubscriberInterface {
 	}
 
 	/**
-	 * Parse the == Changelog == section from readme.txt into HTML.
+	 * Build the changelog HTML for the "View details" modal.
+	 *
+	 * Prefers the remote readme.txt (uploaded as a release asset) so the
+	 * modal shows the newest version's changelog before the user updates.
+	 * Falls back to the locally installed readme.txt — which only contains
+	 * the currently installed version's history — if the remote fetch
+	 * fails or the release predates the asset convention.
 	 */
-	private function get_changelog_html(): string {
-		$readme = dirname( $this->plugin_file ) . '/readme.txt';
-		if ( ! file_exists( $readme ) ) {
+	private function get_changelog_html( ?array $release = null ): string {
+		$readme_url = $release['readme_url'] ?? '';
+		if ( $readme_url ) {
+			$remote = $this->fetch_remote_readme( $readme_url );
+			if ( $remote ) {
+				return $this->parse_changelog( $remote );
+			}
+		}
+
+		$local = dirname( $this->plugin_file ) . '/readme.txt';
+		if ( ! file_exists( $local ) ) {
+			return '';
+		}
+		return $this->parse_changelog( (string) file_get_contents( $local ) );
+	}
+
+	/**
+	 * Fetch the readme.txt asset from GitHub with transient caching.
+	 * The asset URL is public even for private repos because GitHub
+	 * issues unauthenticated download URLs for release assets.
+	 */
+	private function fetch_remote_readme( string $url ): string {
+		$cached = get_transient( self::CACHE_KEY_README );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			return $cached;
+		}
+
+		$response = wp_remote_get( $url, array(
+			'headers' => array(
+				'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
+			),
+			'timeout' => 10,
+		) );
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			return '';
 		}
 
-		$contents = file_get_contents( $readme );
-		$pos      = strpos( $contents, '== Changelog ==' );
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( '' === $body ) {
+			return '';
+		}
+
+		set_transient( self::CACHE_KEY_README, $body, self::CACHE_TTL );
+		return $body;
+	}
+
+	/**
+	 * Parse the == Changelog == section from raw readme.txt contents into HTML.
+	 */
+	private function parse_changelog( string $contents ): string {
+		$pos = strpos( $contents, '== Changelog ==' );
 		if ( false === $pos ) {
 			return '';
 		}
@@ -235,13 +287,16 @@ class UpdateChecker implements SubscriberInterface {
 			return null;
 		}
 
-		// Look for a .zip asset in the release.
-		$zip_url = '';
+		// Look for zip and readme assets in the release.
+		$zip_url    = '';
+		$readme_url = '';
 		if ( ! empty( $data['assets'] ) ) {
 			foreach ( $data['assets'] as $asset ) {
-				if ( str_ends_with( $asset['name'] ?? '', '.zip' ) ) {
+				$name = $asset['name'] ?? '';
+				if ( '' === $zip_url && str_ends_with( $name, '.zip' ) ) {
 					$zip_url = $asset['browser_download_url'];
-					break;
+				} elseif ( '' === $readme_url && 'readme.txt' === $name ) {
+					$readme_url = $asset['browser_download_url'];
 				}
 			}
 		}
@@ -252,9 +307,10 @@ class UpdateChecker implements SubscriberInterface {
 		}
 
 		$result = array(
-			'tag_name' => $data['tag_name'],
-			'zip_url'  => $zip_url,
-			'body'     => $data['body'] ?? '',
+			'tag_name'   => $data['tag_name'],
+			'zip_url'    => $zip_url,
+			'readme_url' => $readme_url,
+			'body'       => $data['body'] ?? '',
 		);
 
 		set_transient( self::CACHE_KEY, $result, self::CACHE_TTL );

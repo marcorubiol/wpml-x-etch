@@ -48,7 +48,7 @@ export function buildLangPickerHtml() {
   if (otherLangs.length === 1) {
     const [code, lang] = otherLangs[0];
     return `<div class="wxe-lang-filter wxe-lang-filter--static" id="wxe-lang-filter">
-      <div class="wxe-lang-chip wxe-lang-chip--static" aria-label="${escapeHtml(lang.native_name || code)}">
+      <div class="wxe-chip wxe-lang-chip wxe-lang-chip--static" aria-label="${escapeHtml(lang.native_name || code)}">
         <img src="${escapeHtml(lang.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
         <span>${escapeHtml((code || '').slice(0, 2).toUpperCase())}</span>
       </div>

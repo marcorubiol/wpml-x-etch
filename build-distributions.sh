@@ -114,6 +114,11 @@ cd "$BUILD_DIR"
 zip -rq "${PLUGIN_SLUG}.zip" "${PLUGIN_SLUG}"
 echo -e "${GREEN}✓${NC} Created: ${PLUGIN_SLUG}.zip (public distribution, supporter tier)"
 
+# Expose readme.txt as a standalone release asset so the UpdateChecker
+# can fetch the latest changelog remotely without downloading the full zip.
+cp "$SCRIPT_DIR/readme.txt" "$BUILD_DIR/readme.txt"
+echo -e "${GREEN}✓${NC} Copied: readme.txt (standalone asset for UpdateChecker)"
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Summary
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

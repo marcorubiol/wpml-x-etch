@@ -30,8 +30,10 @@ jobs:
       - name: Build distributions
         run: bash build-distributions.sh
 
-      - name: Create release and upload zip
+      - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/wpml-x-etch.zip
+          files: |
+            dist/wpml-x-etch.zip
+            dist/readme.txt
           generate_release_notes: true
