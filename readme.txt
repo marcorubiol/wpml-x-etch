@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.4 =
+* Fix: panel no longer shows "Complete" on pages that have no real translated post. Ghost rows in WPML's icl_translation_status (left over from translation attempts that predated this plugin, or from aborted jobs) are now detected at read time and reported as "Not Translated", matching WPML's own Pages-list view.
 
 = 1.0.3 =
 * Refactor: remove LicenseManager singleton — now injected via constructor like all other services.

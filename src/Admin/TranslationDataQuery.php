@@ -174,6 +174,18 @@ class TranslationDataQuery {
 				$status = 'translated';
 			}
 
+			// Ghost-row guard (symmetric to the fallback above): WPML says translated
+			// or needs_update but no translated post exists. Orphan status rows can
+			// come from translation attempts that predated this plugin or from
+			// aborted jobs. Trusting them surfaces false-positive "Complete" on pages
+			// that have no real translation. Aligns with WPML's Pages-list view.
+			// 'waiting' and 'in_progress' are left alone — they can legitimately
+			// exist before the translated post is created.
+			if ( ! $is_original && ! $translated_id
+				&& ( 'translated' === $status || 'needs_update' === $status ) ) {
+				$status = 'not_translated';
+			}
+
 			$lang_data[ $code ] = array(
 				'code'        => $code,
 				'native_name' => $lang['native_name'],

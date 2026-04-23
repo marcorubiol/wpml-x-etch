@@ -77,9 +77,19 @@ the "needs update" flag is irrelevant. This matches WPML's Translation Managemen
 
 ### Status resolution
 
-`TranslationStatusResolver` trusts `icl_translation_status` directly. No read-time
-freshness overrides. With self-managed registration (`kind='Etch'`) and the `needs_update`
-loop fix, WPML's status is reliable.
+`TranslationStatusResolver` trusts `icl_translation_status` directly in the common
+case. With self-managed registration (`kind='Etch'`) and the `needs_update` loop fix,
+WPML's status is reliable when the database is internally consistent.
+
+**Ghost-row guard (v1.0.4)**: `build_lang_data()` downgrades `translated` and
+`needs_update` to `not_translated` when no translated post exists (`element_id` is
+null or missing). Orphan rows in `icl_translation_status` appear on sites that
+installed the plugin after a prior translation attempt, or where WPML jobs were
+aborted. They cause false-positive "Complete" badges on pages that have no real
+translation. The guard is intentionally narrow: `waiting` and `in_progress` are
+left alone because those can legitimately exist before the translated post is
+created. The guard aligns panel output with WPML's Pages-list view, which also
+keys on post existence.
 
 ### needs_update self-reinforcing loop (WPML bug)
 
@@ -158,6 +168,7 @@ Direct queries to WPML tables are required for:
 | ContentTranslationHandler always-write | Components with only dynamic props had empty translated post_content | Writes original structure even with zero translations |
 | `exclude_wp_block_title` | Component names are internal, not user-facing | Same pattern as WPML's wp_template handling |
 | `translation_priority` taxonomy sync off | WPML includes it in ATE jobs | Low risk, setting-based |
+| Ghost-row guard in `build_lang_data` | Orphan `status=10` rows from pre-plugin WPML attempts or aborted jobs | Intentionally narrow: only downgrades translated/needs_update when no translated post exists |
 
 ## Key classes
 
