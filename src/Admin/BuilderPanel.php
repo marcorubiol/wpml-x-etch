@@ -437,6 +437,9 @@ class BuilderPanel implements SubscriberInterface {
 		}
 
 		if ( $trid ) {
+			// Heal any half-state rows (status=10 with element_id=NULL) before
+			// resolving status. See TranslationJobManager::heal_half_state().
+			$this->job_manager->heal_half_states_for_trid( $trid );
 			$lang_data = $this->status_resolver->resolve_post_lang_data( $original_id, $post_type, $active_langs );
 		}
 
@@ -721,6 +724,76 @@ class BuilderPanel implements SubscriberInterface {
 		$status                = $this->resync_handler->get_last_run_status();
 		$status['site_health'] = $this->resync_handler->get_site_health();
 		return $status;
+	}
+
+	/**
+	 * Scan icl_translation_status for half-state rows (status=10 with element_id=NULL)
+	 * and invoke the healer on each. Intended for one-off repair of sites that
+	 * accumulated orphan rows before v1.0.6.
+	 *
+	 * @param bool $dry_run When true, returns the candidate list without calling
+	 *                      the healer. Useful for auditing.
+	 * @param int  $trid    Optional filter: only scan this trid.
+	 */
+	public function handle_heal_half_states( bool $dry_run = false, int $trid = 0 ): array {
+		global $wpdb;
+
+		$where  = 't.element_id IS NULL AND ts.status = ' . (int) TranslationDataQuery::ICL_TM_COMPLETE . ' AND t.source_language_code IS NOT NULL';
+		$params = array();
+		if ( $trid > 0 ) {
+			$where   .= ' AND t.trid = %d';
+			$params[] = $trid;
+		}
+
+		$sql = "SELECT t.trid, t.language_code, t.translation_id
+		        FROM {$wpdb->prefix}icl_translations t
+		        JOIN {$wpdb->prefix}icl_translation_status ts ON ts.translation_id = t.translation_id
+		        WHERE $where
+		        ORDER BY t.trid, t.language_code";
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $params ? $wpdb->get_results( $wpdb->prepare( $sql, ...$params ) ) : $wpdb->get_results( $sql );
+
+		$candidates = array();
+		foreach ( (array) $rows as $r ) {
+			$candidates[] = array(
+				'trid'           => (int) $r->trid,
+				'language_code'  => $r->language_code,
+				'translation_id' => (int) $r->translation_id,
+			);
+		}
+
+		if ( $dry_run ) {
+			return array(
+				'dry_run'    => true,
+				'candidates' => $candidates,
+				'count'      => count( $candidates ),
+			);
+		}
+
+		$healed  = array();
+		$failed  = array();
+		foreach ( $candidates as $c ) {
+			$result = $this->job_manager->heal_half_state( $c['trid'], $c['language_code'] );
+			if ( $result ) {
+				$healed[] = array_merge( $c, array( 'element_id' => $result ) );
+			} else {
+				$failed[] = $c;
+			}
+		}
+
+		Logger::info( 'Backfill heal-half-states complete', array(
+			'candidates' => count( $candidates ),
+			'healed'     => count( $healed ),
+			'failed'     => count( $failed ),
+		) );
+
+		return array(
+			'dry_run' => false,
+			'scanned' => count( $candidates ),
+			'healed'  => $healed,
+			'failed'  => $failed,
+		);
 	}
 
 	/** Fetch all original wp_block posts with per-language translation status. */

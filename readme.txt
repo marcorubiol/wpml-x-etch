@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,12 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.6 =
+* Fix: half-state translations (WPML status = Complete with no translated post actually created) are now healed automatically on panel open. The panel re-invokes WPML's native completion path (`wpml_tm_save_data`), which materializes the missing post from the already-translated strings. Root cause of the half-state remains upstream in WPML/ATE — this is a defensive repair path.
+* New: admin-only REST endpoint `POST /wpml-x-etch/v1/heal-half-states` for site-wide backfill of pre-existing orphan rows. Supports `dry_run=true` for audit and `trid=<id>` for scoped repair. Intended for one-off use on sites that accumulated half-states before v1.0.6.
+* Protection: MySQL `GET_LOCK` on trid+lang prevents two concurrent panel requests from both triggering WPML's post-creation path (which would produce duplicate posts). Per-row circuit breaker disables healing after 3 failures in an hour, so a persistent upstream issue can't loop.
+* Telemetry: every heal attempt, success, lock conflict, or failure is logged via `Logger::info`/`Logger::warning` with `trid`, `lang`, `job_id`, and `strings_count`. Use this to measure how often half-states occur in the wild.
 
 = 1.0.5 =
 * Fix: Languages filter in the sidebar rendered flag + code as plain text (no pill outline) when only one secondary language was configured. Static single-language chip now includes the base `.wxe-chip` class so it inherits pill shape like the multi-language button variant.

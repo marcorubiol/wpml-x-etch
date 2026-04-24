@@ -455,6 +455,190 @@ class TranslationJobManager {
 	}
 
 	/**
+	 * Heal a translation "half-state": status=10 (complete) with element_id=NULL.
+	 *
+	 * Re-invokes WPML's native completion via wpml_tm_save_data, which materializes
+	 * the translated post and backfills icl_translations.element_id. Idempotent —
+	 * returns early if the row is not in a half-state.
+	 *
+	 * Concurrency: MySQL GET_LOCK on trid+lang prevents two requests from both
+	 * triggering save_translation on the same row (which would create duplicate
+	 * WP posts via wpml_get_create_post_helper).
+	 *
+	 * Circuit breaker: three consecutive failures within an hour disable healing
+	 * for this trid+lang, so a persistent upstream issue can't put the panel
+	 * into an infinite heal loop.
+	 *
+	 * @return int|null The materialized element_id, or null if heal was skipped or failed.
+	 */
+	public function heal_half_state( int $trid, string $lang ): ?int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT t.translation_id, t.element_id, ts.status
+			 FROM {$wpdb->prefix}icl_translations t
+			 LEFT JOIN {$wpdb->prefix}icl_translation_status ts ON ts.translation_id = t.translation_id
+			 WHERE t.trid = %d AND t.language_code = %s",
+			$trid,
+			$lang
+		) );
+
+		if ( ! $row || $row->element_id || (int) ( $row->status ?? 0 ) !== TranslationDataQuery::ICL_TM_COMPLETE ) {
+			return null;
+		}
+
+		$breaker_key = "zs_wxe_heal_fail_{$trid}_{$lang}";
+		$failures    = (int) get_transient( $breaker_key );
+		if ( $failures >= 3 ) {
+			return null;
+		}
+
+		$lock_name = substr( "wxe_heal_{$trid}_{$lang}", 0, 64 );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$got_lock  = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 2)', $lock_name ) );
+
+		if ( $got_lock !== 1 ) {
+			Logger::info( 'Heal lock busy — another request is healing this row', array(
+				'trid' => $trid,
+				'lang' => $lang,
+			) );
+			return null;
+		}
+
+		try {
+			// Re-check after lock: a concurrent request may have just healed it.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$element_id = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE translation_id = %d",
+				$row->translation_id
+			) );
+			if ( $element_id ) {
+				return $element_id;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$job_id = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT j.job_id
+				 FROM {$wpdb->prefix}icl_translate_job j
+				 JOIN {$wpdb->prefix}icl_translation_status ts ON ts.rid = j.rid
+				 WHERE ts.translation_id = %d
+				 ORDER BY j.job_id DESC LIMIT 1",
+				$row->translation_id
+			) );
+
+			if ( ! $job_id ) {
+				Logger::warning( 'Heal skipped: no job exists for translation', array(
+					'trid'           => $trid,
+					'lang'           => $lang,
+					'translation_id' => (int) $row->translation_id,
+				) );
+				return null;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$original_id = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT element_id FROM {$wpdb->prefix}icl_translations
+				 WHERE trid = %d AND source_language_code IS NULL",
+				$trid
+			) );
+			if ( ! $original_id ) {
+				Logger::warning( 'Heal skipped: no original post for trid', array( 'trid' => $trid ) );
+				return null;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$string_rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT s.value AS original, st.value AS translated
+				 FROM {$wpdb->prefix}icl_strings s
+				 JOIN {$wpdb->prefix}icl_string_translations st ON st.string_id = s.id
+				 JOIN {$wpdb->prefix}icl_string_packages p ON p.ID = s.string_package_id
+				 WHERE p.kind = %s AND st.language = %s AND st.status = 10 AND p.post_id = %d",
+				\WpmlXEtch\WPML\StringHandler::PACKAGE_KIND,
+				$lang,
+				$original_id
+			) );
+
+			$translations_map = array();
+			foreach ( (array) $string_rows as $s ) {
+				$translations_map[ $s->original ] = $s->translated;
+			}
+
+			Logger::info( 'Heal materializing half-state via wpml_tm_save_data', array(
+				'trid'           => $trid,
+				'lang'           => $lang,
+				'job_id'         => $job_id,
+				'translation_id' => (int) $row->translation_id,
+				'strings_count'  => count( $translations_map ),
+			) );
+
+			$this->complete_job_via_wpml( $job_id, $lang, $translations_map );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$final = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE translation_id = %d",
+				$row->translation_id
+			) );
+
+			if ( $final && get_post( $final ) ) {
+				Logger::info( 'Heal succeeded', array(
+					'trid'       => $trid,
+					'lang'       => $lang,
+					'element_id' => $final,
+				) );
+				delete_transient( $breaker_key );
+				return $final;
+			}
+
+			set_transient( $breaker_key, $failures + 1, HOUR_IN_SECONDS );
+			Logger::warning( 'Heal failed: WPML did not materialize the post', array(
+				'trid'          => $trid,
+				'lang'          => $lang,
+				'job_id'        => $job_id,
+				'failure_count' => $failures + 1,
+			) );
+			return null;
+		} finally {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+		}
+	}
+
+	/**
+	 * Heal every half-state row attached to a trid.
+	 *
+	 * Scoped scan — never runs site-wide. Call it with the trid of the post
+	 * currently being displayed so the healing cost is proportional to panel
+	 * usage.
+	 *
+	 * @return array<string, int> Healed languages → new element_id.
+	 */
+	public function heal_half_states_for_trid( int $trid ): array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT t.language_code
+			 FROM {$wpdb->prefix}icl_translations t
+			 JOIN {$wpdb->prefix}icl_translation_status ts ON ts.translation_id = t.translation_id
+			 WHERE t.trid = %d
+			   AND t.element_id IS NULL
+			   AND ts.status = %d",
+			$trid,
+			TranslationDataQuery::ICL_TM_COMPLETE
+		) );
+
+		$healed = array();
+		foreach ( (array) $rows as $r ) {
+			$result = $this->heal_half_state( $trid, $r->language_code );
+			if ( $result ) {
+				$healed[ $r->language_code ] = $result;
+			}
+		}
+		return $healed;
+	}
+
+	/**
 	 * Inserts directly into icl_translations instead of using
 	 * wpml_set_element_language_details, which can trigger WPML to
 	 * auto-create duplicate posts with their own trid (orphan originals).

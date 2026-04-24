@@ -125,6 +125,25 @@ class TranslationRoutes extends BaseRoute {
 				'callback' => array( $this, 'get_resync_status' ),
 			),
 			array(
+				'route'              => '/heal-half-states',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'heal_half_states' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
+					'dry_run' => array(
+						'required' => false,
+						'type'     => 'boolean',
+						'default'  => false,
+					),
+					'trid'    => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+						'default'           => 0,
+					),
+				),
+			),
+			array(
 				'route'    => '/ai/settings',
 				'methods'  => 'GET',
 				'callback' => array( $this, 'get_ai_settings' ),
@@ -309,6 +328,21 @@ class TranslationRoutes extends BaseRoute {
 
 	public function get_resync_status( WP_REST_Request $request ): WP_REST_Response {
 		return new WP_REST_Response( $this->panel->handle_get_resync_status(), 200 );
+	}
+
+	public function heal_half_states( WP_REST_Request $request ): WP_REST_Response {
+		$result = $this->panel->handle_heal_half_states(
+			(bool) $request->get_param( 'dry_run' ),
+			(int) $request->get_param( 'trid' )
+		);
+		return new WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * Stricter gate for maintenance endpoints (backfill). Full admins only.
+	 */
+	public function has_admin_access(): bool {
+		return current_user_can( 'manage_options' );
 	}
 
 	public function get_ai_settings( WP_REST_Request $request ): WP_REST_Response {

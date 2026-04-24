@@ -2,7 +2,7 @@
     <img src="${d(t.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
     <span>${d(s)}</span>
   </button>`}function qt(){const e=x(),t=Rt();if(t.length===0)return`<p class="content-hub-list__disclaimer" style="padding:0;">${d(e.noLanguages||"No languages configured.")}</p>`;if(t.length===1){const[s,a]=t[0];return`<div class="wxe-lang-filter wxe-lang-filter--static" id="wxe-lang-filter">
-      <div class="wxe-lang-chip wxe-lang-chip--static" aria-label="${d(a.native_name||s)}">
+      <div class="wxe-chip wxe-lang-chip wxe-lang-chip--static" aria-label="${d(a.native_name||s)}">
         <img src="${d(a.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
         <span>${d((s||"").slice(0,2).toUpperCase())}</span>
       </div>
