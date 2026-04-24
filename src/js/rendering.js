@@ -74,14 +74,6 @@ export function renderPillContent() {
       renderTypePill(state.activePill, contentEl);
     }
 
-    // Language filters don't apply to JSON loops — they have no per-language
-    // data. Disable the section visually so users aren't misled.
-    const langClearBtn = document.getElementById('wxe-lang-clear-btn');
-    const langSection = langClearBtn?.closest('.content-hub-list');
-    if (langSection) {
-      langSection.classList.toggle('wxe-section--disabled', state.activePill === 'json-loops');
-    }
-
     contentEl.classList.remove("wxe-content-fade--out");
     contentEl.classList.add("wxe-content-fade--in");
 

@@ -1083,15 +1083,16 @@
 /* Single-language card: a component or loop card with only one language
    row looks cramped next to the standard multi-language layout (the card
    is short vertically, so the fixed padding appears disproportionate).
-   Boost vertical padding for visual parity. Same class of fix we shipped
-   in v1.0.5 for the sidebar Languages pill.
+   Apply a min-height so the card has visual presence regardless of row
+   count. `justify-content: center` on the parent distributes the existing
+   content in the extra space.
 
    Selector: matches a card that has a lang-row but does NOT have two
    consecutive lang-rows. `:only-of-type` doesn't work here because every
    child is a `<div>` — it would never match while the header-row sibling
    exists. */
 .wxe-component-group:has(> .wxe-component-lang-row):not(:has(> .wxe-component-lang-row + .wxe-component-lang-row)) {
-    padding-block: var(--wxe-space-m);
+    min-height: calc(var(--wxe-space-l) * 5);
 }
 
 .wxe-component-header {
