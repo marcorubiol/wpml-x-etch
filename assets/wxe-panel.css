@@ -1080,6 +1080,15 @@
     border-radius: var(--wxe-border-radius);
 }
 
+/* Single-language card: a component or loop card with only one language
+   row looks cramped next to the standard multi-language layout (the card
+   is short vertically, so the fixed padding appears disproportionate).
+   Boost vertical padding for visual parity. Same class of fix we shipped
+   in v1.0.5 for the sidebar Languages pill. */
+.wxe-component-group:has(> .wxe-component-lang-row:only-of-type) {
+    padding-block: var(--wxe-space-m);
+}
+
 .wxe-component-header {
     display: flex;
     align-items: center;

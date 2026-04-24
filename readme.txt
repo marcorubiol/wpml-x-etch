@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.9 =
+* Polish: loop and component cards in the main content area get a touch more vertical padding when they contain a single language row, so their internal proportions match the multi-language layout instead of looking cramped. Same class of visual parity fix as the sidebar Languages pill in v1.0.5.
 
 = 1.0.8 =
 * Fix: no more spurious `needs_update` on pages containing numeric UI labels ("01", "02"), CSS-like tokens ("12px", "#fff"), or pure glyphs ("→", "•", "…"). The completeness counter now excludes these from the "is this fully translated?" check, matching how WPML itself handles them at job-assembly time — those fields never reach ATE and are auto-completed with the source value. Counting them as pending produced false "Needs update" badges on pages that were, in fact, fully translated.
