@@ -1084,8 +1084,13 @@
    row looks cramped next to the standard multi-language layout (the card
    is short vertically, so the fixed padding appears disproportionate).
    Boost vertical padding for visual parity. Same class of fix we shipped
-   in v1.0.5 for the sidebar Languages pill. */
-.wxe-component-group:has(> .wxe-component-lang-row:only-of-type) {
+   in v1.0.5 for the sidebar Languages pill.
+
+   Selector: matches a card that has a lang-row but does NOT have two
+   consecutive lang-rows. `:only-of-type` doesn't work here because every
+   child is a `<div>` — it would never match while the header-row sibling
+   exists. */
+.wxe-component-group:has(> .wxe-component-lang-row):not(:has(> .wxe-component-lang-row + .wxe-component-lang-row)) {
     padding-block: var(--wxe-space-m);
 }
 
@@ -2026,9 +2031,19 @@ a.wxe-component-header:hover {
     background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
+/* Static single-language chip: rendered as informational badge, not as
+   a filter chip. No pill outline, no muted palette — it reads as
+   "target language" indicator, not as an applied/disabled filter. */
 .wxe-lang-chip--static {
     cursor: default;
     pointer-events: none;
+    border-color: transparent;
+    background: color-mix(in srgb, currentColor 5%, transparent);
+    color: var(--wxe-text-color);
+}
+
+.wxe-lang-chip--static .wxe-flag {
+    opacity: 1;
 }
 
 .wxe-lang-filter--static {

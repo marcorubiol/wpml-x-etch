@@ -39,10 +39,22 @@ export function buildLangPickerHtml() {
   const m          = msg();
   const otherLangs = getOtherLangs();
 
-  // Zero or one secondary language: nothing to filter. Return empty so
-  // the caller omits the whole Languages sidebar section.
-  if (otherLangs.length <= 1) {
-    return '';
+  if (otherLangs.length === 0) {
+    return `<p class="content-hub-list__disclaimer" style="padding:0;">${escapeHtml(m.noLanguages || 'No languages configured.')}</p>`;
+  }
+
+  // 1 language: render as an informational badge (no pill outline, no
+  // muted palette) so it clearly reads as "target language" info, not as
+  // an applied filter. There's nothing to filter when only one secondary
+  // language exists.
+  if (otherLangs.length === 1) {
+    const [code, lang] = otherLangs[0];
+    return `<div class="wxe-lang-filter wxe-lang-filter--static" id="wxe-lang-filter">
+      <div class="wxe-chip wxe-lang-chip wxe-lang-chip--static" aria-label="${escapeHtml(lang.native_name || code)}">
+        <img src="${escapeHtml(lang.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
+        <span>${escapeHtml((code || '').slice(0, 2).toUpperCase())}</span>
+      </div>
+    </div>`;
   }
 
   let chips = '';

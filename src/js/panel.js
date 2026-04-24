@@ -125,7 +125,7 @@ function _buildPanelTemplate(m, statusBadgeHtml, postTitle, metaHtml, langPicker
 						${metaHtml}
 					</div>
 				</div>
-				${langPickerHtml ? `<div class="content-hub-list">
+				<div class="content-hub-list">
 					<div class="wxe-section-header wxe-sidebar-section-heading wxe-section-header--with-badge">
 						<h3>${ICON_LANGUAGES}<span>${escapeHtml(m.languages || 'Languages')}</span></h3>
 						<div class="wxe-status-shortcut" role="group" aria-label="${escapeHtml(m.languages || 'Languages')}">
@@ -133,9 +133,9 @@ function _buildPanelTemplate(m, statusBadgeHtml, postTitle, metaHtml, langPicker
 						</div>
 					</div>
 					<div class="wxe-filter-section">
-						${langPickerHtml}
+						${langPickerHtml || '<p class="content-hub-list__disclaimer" style="padding:0;">' + escapeHtml(m.noLanguages || 'No languages configured.') + '</p>'}
 					</div>
-				</div>` : ''}
+				</div>
 				<div class="content-hub-list">
 					<div class="wxe-section-header wxe-sidebar-section-heading wxe-section-header--with-badge">
 						<h3>${ICON_SLIDERS}<span>${escapeHtml(m.status || 'Status')}</span></h3>
