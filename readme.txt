@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,11 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.8 =
+* Fix: no more spurious `needs_update` on pages containing numeric UI labels ("01", "02"), CSS-like tokens ("12px", "#fff"), or pure glyphs ("→", "•", "…"). The completeness counter now excludes these from the "is this fully translated?" check, matching how WPML itself handles them at job-assembly time — those fields never reach ATE and are auto-completed with the source value. Counting them as pending produced false "Needs update" badges on pages that were, in fact, fully translated.
+* New: `StringHandler::is_not_translatable()` public static helper. Delegates to WPML's own `WPML_String_Functions::is_not_translatable()` (numeric, CSS color, CSS length) and extends it to cover WPML's gap — whitespace-only, pure Unicode symbols, pure punctuation. Safe to call from other plugin code that needs the same filter.
+* Note: registration behaviour unchanged. Non-translatable strings are still written to `icl_strings` (this matches WPML's own Gutenberg handler — it does not pre-filter at registration either). The fix is purely in the completeness counter, so no backfill or data migration is needed.
 
 = 1.0.7 =
 * Fix: heal now detects "phantom pointer" half-states — rows where `icl_translations.element_id` points to a WP post that no longer exists. WPML's own completion path cannot recover from this shape: it sees a non-null element_id and takes the "update existing post" branch, which silently no-ops on a missing post. Heal now clears the phantom pointer to NULL before invoking `wpml_tm_save_data`, which makes WPML take the "create new post" branch and materialize the translated post correctly.

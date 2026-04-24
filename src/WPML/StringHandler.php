@@ -132,6 +132,40 @@ class StringHandler implements SubscriberInterface {
 	 */
 	public const PACKAGE_KIND = 'Etch';
 
+	/**
+	 * Whether a string value should be considered "not translatable".
+	 *
+	 * Delegates to WPML's own public utility (numeric, CSS color, CSS length)
+	 * and extends it with a gap WPML does not cover — whitespace-only values,
+	 * pure Unicode symbols, and pure punctuation. This matches WPML's job
+	 * assembly behaviour: fields that return true here get auto-completed
+	 * with the source value and are never sent to ATE.
+	 *
+	 * Callers should use this to exclude non-translatable strings from
+	 * completeness counts — we do NOT filter at registration time, because
+	 * WPML itself registers these strings into `icl_strings` by design.
+	 */
+	public static function is_not_translatable( string $value ): bool {
+		if ( class_exists( '\WPML_String_Functions' ) && \WPML_String_Functions::is_not_translatable( $value ) ) {
+			return true;
+		}
+
+		$trimmed = trim( $value );
+		if ( '' === $trimmed ) {
+			return true;
+		}
+
+		// Pure Unicode symbol + punctuation + whitespace — e.g. "→", "•", "— —", "…".
+		// WPML_String_Functions does not cover these; they show up routinely in
+		// UI chrome (list bullets, arrows, separators) and produce spurious
+		// "needs update" reports when counted as pending translations.
+		if ( preg_match( '/^[\p{S}\p{P}\s]+$/u', $trimmed ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	/** Check if WPML String Translation is active (tables exist). */
 	private static function is_string_translation_active(): bool {
 		return defined( 'WPML_ST_VERSION' );

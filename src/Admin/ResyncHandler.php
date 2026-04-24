@@ -580,6 +580,14 @@ class ResyncHandler {
 
 	/**
 	 * Check if all Etch strings for the given posts are translated for a language.
+	 *
+	 * Strings that WPML itself considers "not translatable" (pure numbers, CSS
+	 * colors, CSS lengths) — plus our own extension for whitespace-only, pure
+	 * symbols and pure punctuation — are excluded from the count. This matches
+	 * WPML's own job-assembly behaviour: those fields get auto-completed with
+	 * the source value (`field_translate=0, field_finished=1`) and never reach
+	 * ATE. Counting them as "pending" produced spurious `needs_update` reports
+	 * on pages with numeric UI labels ("01", "02") or glyphs ("→").
 	 */
 	private function is_translation_complete( array $post_ids, string $lang ): bool {
 		global $wpdb;
@@ -591,9 +599,8 @@ class ResyncHandler {
 		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders built from count.
-		$row = $wpdb->get_row( $wpdb->prepare(
-			"SELECT COUNT(*) AS total,
-			        COUNT(st.id) AS translated
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT s.id, s.value, st.id AS translation_id
 			 FROM {$wpdb->prefix}icl_strings s
 			 JOIN {$wpdb->prefix}icl_string_packages p ON s.string_package_id = p.ID
 			 LEFT JOIN {$wpdb->prefix}icl_string_translations st
@@ -604,11 +611,23 @@ class ResyncHandler {
 			...$post_ids
 		) );
 
-		if ( ! $row ) {
-			return false;
+		if ( empty( $rows ) ) {
+			return true;
 		}
 
-		return (int) $row->total === 0 || (int) $row->translated >= (int) $row->total;
+		$total      = 0;
+		$translated = 0;
+		foreach ( $rows as $r ) {
+			if ( StringHandler::is_not_translatable( (string) $r->value ) ) {
+				continue;
+			}
+			$total++;
+			if ( $r->translation_id ) {
+				$translated++;
+			}
+		}
+
+		return $total === 0 || $translated >= $total;
 	}
 
 	/**
