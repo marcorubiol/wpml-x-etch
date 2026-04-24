@@ -1092,7 +1092,7 @@
    child is a `<div>` — it would never match while the header-row sibling
    exists. */
 .wxe-component-group:has(> .wxe-component-lang-row):not(:has(> .wxe-component-lang-row + .wxe-component-lang-row)) {
-    min-height: calc(var(--wxe-space-l) * 5);
+    min-height: 2rem;
 }
 
 .wxe-component-header {
