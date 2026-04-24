@@ -455,11 +455,18 @@ class TranslationJobManager {
 	}
 
 	/**
-	 * Heal a translation "half-state": status=10 (complete) with element_id=NULL.
+	 * Heal a translation "half-state": status=10 (complete) without a usable
+	 * translated post. Two shapes we handle:
 	 *
-	 * Re-invokes WPML's native completion via wpml_tm_save_data, which materializes
-	 * the translated post and backfills icl_translations.element_id. Idempotent —
-	 * returns early if the row is not in a half-state.
+	 *   (a) element_id IS NULL       — WPML never populated the pointer.
+	 *   (b) element_id points to a missing post ("phantom pointer") — the
+	 *       post was deleted but icl_translations still points at its ID.
+	 *       WPML's save_translation sees a non-null element_id and takes
+	 *       the "update existing post" branch, which silently no-ops on a
+	 *       missing post. The ID stays frozen forever.
+	 *
+	 * For phantom pointers we NULL the element_id before invoking
+	 * wpml_tm_save_data so WPML takes the "create new post" branch instead.
 	 *
 	 * Concurrency: MySQL GET_LOCK on trid+lang prevents two requests from both
 	 * triggering save_translation on the same row (which would create duplicate
@@ -484,7 +491,23 @@ class TranslationJobManager {
 			$lang
 		) );
 
-		if ( ! $row || $row->element_id || (int) ( $row->status ?? 0 ) !== TranslationDataQuery::ICL_TM_COMPLETE ) {
+		if ( ! $row || (int) ( $row->status ?? 0 ) !== TranslationDataQuery::ICL_TM_COMPLETE ) {
+			return null;
+		}
+
+		$element_id = $row->element_id === null ? null : (int) $row->element_id;
+		$is_phantom = false;
+		if ( $element_id !== null ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$post_exists = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE ID = %d",
+				$element_id
+			) );
+			$is_phantom = ! $post_exists;
+		}
+
+		// Row is healthy — nothing to do.
+		if ( $element_id !== null && ! $is_phantom ) {
 			return null;
 		}
 
@@ -508,13 +531,28 @@ class TranslationJobManager {
 
 		try {
 			// Re-check after lock: a concurrent request may have just healed it.
+			// Non-null element_id alone is NOT sufficient — it may still be a
+			// phantom pointer. Only consider it healed if the target post exists.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-			$element_id = (int) $wpdb->get_var( $wpdb->prepare(
+			$element_id_now = $wpdb->get_var( $wpdb->prepare(
 				"SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE translation_id = %d",
 				$row->translation_id
 			) );
-			if ( $element_id ) {
-				return $element_id;
+			if ( $element_id_now !== null ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$post_exists_now = (int) $wpdb->get_var( $wpdb->prepare(
+					"SELECT ID FROM {$wpdb->posts} WHERE ID = %d",
+					(int) $element_id_now
+				) );
+				if ( $post_exists_now ) {
+					return (int) $element_id_now;
+				}
+				// Still phantom — re-sync local flag and proceed.
+				$is_phantom = true;
+				$element_id = (int) $element_id_now;
+			} else {
+				$is_phantom = false;
+				$element_id = null;
 			}
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -564,12 +602,29 @@ class TranslationJobManager {
 				$translations_map[ $s->original ] = $s->translated;
 			}
 
+			// Phantom pointer: NULL the element_id so WPML's save_translation
+			// takes the "create new post" branch instead of "update existing".
+			if ( $is_phantom ) {
+				Logger::info( 'Heal clearing phantom element_id pointer', array(
+					'trid'              => $trid,
+					'lang'              => $lang,
+					'translation_id'    => (int) $row->translation_id,
+					'phantom_element_id' => $element_id,
+				) );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->query( $wpdb->prepare(
+					"UPDATE {$wpdb->prefix}icl_translations SET element_id = NULL WHERE translation_id = %d",
+					$row->translation_id
+				) );
+			}
+
 			Logger::info( 'Heal materializing half-state via wpml_tm_save_data', array(
 				'trid'           => $trid,
 				'lang'           => $lang,
 				'job_id'         => $job_id,
 				'translation_id' => (int) $row->translation_id,
 				'strings_count'  => count( $translations_map ),
+				'phantom'        => $is_phantom,
 			) );
 
 			$this->complete_job_via_wpml( $job_id, $lang, $translations_map );
@@ -621,9 +676,11 @@ class TranslationJobManager {
 			"SELECT t.language_code
 			 FROM {$wpdb->prefix}icl_translations t
 			 JOIN {$wpdb->prefix}icl_translation_status ts ON ts.translation_id = t.translation_id
+			 LEFT JOIN {$wpdb->posts} wp ON wp.ID = t.element_id
 			 WHERE t.trid = %d
-			   AND t.element_id IS NULL
-			   AND ts.status = %d",
+			   AND t.source_language_code IS NOT NULL
+			   AND ts.status = %d
+			   AND ( t.element_id IS NULL OR wp.ID IS NULL )",
 			$trid,
 			TranslationDataQuery::ICL_TM_COMPLETE
 		) );

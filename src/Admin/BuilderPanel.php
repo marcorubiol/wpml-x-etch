@@ -738,16 +738,19 @@ class BuilderPanel implements SubscriberInterface {
 	public function handle_heal_half_states( bool $dry_run = false, int $trid = 0 ): array {
 		global $wpdb;
 
-		$where  = 't.element_id IS NULL AND ts.status = ' . (int) TranslationDataQuery::ICL_TM_COMPLETE . ' AND t.source_language_code IS NOT NULL';
+		$where  = 'ts.status = ' . (int) TranslationDataQuery::ICL_TM_COMPLETE
+			. ' AND t.source_language_code IS NOT NULL'
+			. ' AND ( t.element_id IS NULL OR wp.ID IS NULL )';
 		$params = array();
 		if ( $trid > 0 ) {
 			$where   .= ' AND t.trid = %d';
 			$params[] = $trid;
 		}
 
-		$sql = "SELECT t.trid, t.language_code, t.translation_id
+		$sql = "SELECT t.trid, t.language_code, t.translation_id, t.element_id
 		        FROM {$wpdb->prefix}icl_translations t
 		        JOIN {$wpdb->prefix}icl_translation_status ts ON ts.translation_id = t.translation_id
+		        LEFT JOIN {$wpdb->posts} wp ON wp.ID = t.element_id
 		        WHERE $where
 		        ORDER BY t.trid, t.language_code";
 
@@ -760,6 +763,7 @@ class BuilderPanel implements SubscriberInterface {
 				'trid'           => (int) $r->trid,
 				'language_code'  => $r->language_code,
 				'translation_id' => (int) $r->translation_id,
+				'element_id'     => $r->element_id === null ? null : (int) $r->element_id,
 			);
 		}
 

@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,11 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.7 =
+* Fix: heal now detects "phantom pointer" half-states — rows where `icl_translations.element_id` points to a WP post that no longer exists. WPML's own completion path cannot recover from this shape: it sees a non-null element_id and takes the "update existing post" branch, which silently no-ops on a missing post. Heal now clears the phantom pointer to NULL before invoking `wpml_tm_save_data`, which makes WPML take the "create new post" branch and materialize the translated post correctly.
+* Fix: widened scan SQL in `heal_half_states_for_trid()` and the `/heal-half-states` backfill endpoint to include phantom rows via a `LEFT JOIN wp_posts`. Previous versions only caught the `element_id IS NULL` shape and missed sites where WPML left behind deleted-post pointers.
+* Telemetry: new `Heal clearing phantom element_id pointer` log line with `translation_id` and `phantom_element_id` so you can see when a phantom is being repaired. Regular `Heal materializing` entry now includes a `phantom: true/false` flag.
 
 = 1.0.6 =
 * Fix: half-state translations (WPML status = Complete with no translated post actually created) are now healed automatically on panel open. The panel re-invokes WPML's native completion path (`wpml_tm_save_data`), which materializes the missing post from the already-translated strings. Root cause of the half-state remains upstream in WPML/ATE — this is a defensive repair path.
