@@ -23,6 +23,14 @@ class LoopTranslator implements SubscriberInterface {
 	private const CONTEXT = 'Etch JSON Loops';
 
 	/**
+	 * Transient key holding the md5(serialize) of the last etch_loops payload
+	 * we registered. Used to skip the walk + DB cleanup when nothing changed.
+	 * Invalidated explicitly from update_option_etch_loops / add_option_etch_loops
+	 * (no expiry — we trust the invalidation hooks, not a time bomb).
+	 */
+	private const HASH_TRANSIENT = 'zs_wxe_loops_registry_hash';
+
+	/**
 	 * Loop IDs that are managed by this plugin's own integration code and
 	 * must NEVER be registered with WPML String Translation. Their data is
 	 * generated dynamically from authoritative sources (e.g. WPML's own
@@ -54,14 +62,31 @@ class LoopTranslator implements SubscriberInterface {
 		return array(
 			array( 'init', 'register_loop_strings', 15 ),
 			array( 'option_etch_loops', 'translate_loops' ),
+			array( 'update_option_etch_loops', 'invalidate_registry_hash' ),
+			array( 'add_option_etch_loops', 'invalidate_registry_hash' ),
 		);
 	}
 
 	/**
-	 * Register translatable string values from JSON loops with WPML.
+	 * Drop the cached registry hash so the next register_loop_strings call
+	 * walks the (now-changed) etch_loops payload. Wired to update_option /
+	 * add_option of etch_loops.
 	 */
-	public function register_loop_strings(): void {
-		if ( ! is_admin() && ! wp_doing_cron() && ! defined( 'REST_REQUEST' ) ) {
+	public function invalidate_registry_hash(): void {
+		delete_transient( self::HASH_TRANSIENT );
+	}
+
+	/**
+	 * Register translatable string values from JSON loops with WPML.
+	 *
+	 * @param bool $force_context Bypass the admin/cron/REST context guard.
+	 *                            Used by callers that need fresh registration
+	 *                            from non-standard contexts (e.g. the panel
+	 *                            built inside the Etch builder, which runs on
+	 *                            the frontend via ?etch=magic).
+	 */
+	public function register_loop_strings( bool $force_context = false ): void {
+		if ( ! $force_context && ! is_admin() && ! wp_doing_cron() && ! defined( 'REST_REQUEST' ) ) {
 			return;
 		}
 		if ( ! function_exists( 'icl_register_string' ) ) {
@@ -70,6 +95,16 @@ class LoopTranslator implements SubscriberInterface {
 
 		$loops = get_option( 'etch_loops', array() );
 		if ( ! is_array( $loops ) ) {
+			return;
+		}
+
+		// Skip the walk + DB cleanup when etch_loops hasn't changed since last
+		// registration. Hash is set after a successful walk and invalidated by
+		// the update_option_etch_loops / add_option_etch_loops subscribers.
+		// Filter `zs_wxe_force_loop_registration` is the escape hatch.
+		$current_hash = md5( serialize( $loops ) );
+		$force_walk   = (bool) apply_filters( 'zs_wxe_force_loop_registration', false );
+		if ( ! $force_walk && get_transient( self::HASH_TRANSIENT ) === $current_hash ) {
 			return;
 		}
 
@@ -138,6 +173,10 @@ class LoopTranslator implements SubscriberInterface {
 
 		// Remove orphaned strings no longer present in any loop.
 		$this->cleanup_stale_loop_strings( $current_names );
+
+		// Persist hash so subsequent requests skip the walk until etch_loops
+		// changes. Stored without expiry — invalidation is event-driven.
+		set_transient( self::HASH_TRANSIENT, $current_hash, 0 );
 	}
 
 	/**

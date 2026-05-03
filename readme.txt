@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,10 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.1 =
+* Performance: `register_loop_strings` now skips the full walk + DB cleanup when `etch_loops` hasn't changed since the last registration. Hash of the option payload is stored in a transient (`zs_wxe_loops_registry_hash`) and invalidated on the `update_option_etch_loops` / `add_option_etch_loops` hooks. Filter `zs_wxe_force_loop_registration` provides an escape hatch.
+* Reliability: closes a race condition where opening the WPML x Etch panel immediately after creating a new JSON loop showed empty status. The panel now forces a registration pass before reading status (idempotent thanks to the transient gate above — a no-op when nothing changed). The registration call accepts a `$force_context` parameter so it can run from the Etch builder frontend (`?etch=magic`), where the standard admin/REST guard would otherwise short-circuit.
 
 = 1.2.0 =
 * Performance: per-request memoization of `translate_loops`. The `option_etch_loops` filter fires many times per frontend request (Etch core, themes, third-party plugins), and each call previously walked every loop and rebuilt the translation map. Results are now cached per request, keyed by current language. Cache only kicks in after the `wp` action has fired so the language switcher's URL refresh (which depends on the resolved current page) still runs on early calls.

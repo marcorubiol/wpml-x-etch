@@ -20,6 +20,7 @@ use WpmlXEtch\License\LicenseManager;
 use WpmlXEtch\Core\SubscriberInterface;
 use WpmlXEtch\Etch\MetaSync;
 use WpmlXEtch\Utils\Logger;
+use WpmlXEtch\WPML\LoopTranslator;
 
 /**
  * Handles the WPML panel in Etch builder.
@@ -40,8 +41,9 @@ class BuilderPanel implements SubscriberInterface {
 	private readonly ResyncHandler $resync_handler;
 	private readonly AiSettings $ai_settings;
 	private readonly LicenseManager $license_manager;
+	private readonly LoopTranslator $loop_translator;
 
-	public function __construct( MetaSync $meta_sync, TranslationStatusResolver $status_resolver, TranslationDataQuery $data_query, TranslationJobManager $job_manager, PanelConfig $config, ResyncHandler $resync_handler, AiSettings $ai_settings, LicenseManager $license_manager ) {
+	public function __construct( MetaSync $meta_sync, TranslationStatusResolver $status_resolver, TranslationDataQuery $data_query, TranslationJobManager $job_manager, PanelConfig $config, ResyncHandler $resync_handler, AiSettings $ai_settings, LicenseManager $license_manager, LoopTranslator $loop_translator ) {
 		$this->meta_sync       = $meta_sync;
 		$this->status_resolver = $status_resolver;
 		$this->data_query      = $data_query;
@@ -50,6 +52,7 @@ class BuilderPanel implements SubscriberInterface {
 		$this->resync_handler  = $resync_handler;
 		$this->ai_settings     = $ai_settings;
 		$this->license_manager = $license_manager;
+		$this->loop_translator = $loop_translator;
 	}
 
 	public static function getSubscribedEvents(): array {
@@ -509,6 +512,16 @@ class BuilderPanel implements SubscriberInterface {
 		$all_loop_names     = array_column( $json_loops, 'name' );
 		$context_loop_names = array_column( array_filter( $json_loops, fn( $l ) => $l['onThisPage'] ), 'name' );
 		$non_default        = array_values( array_diff( array_keys( $active_langs ), array( apply_filters( 'wpml_default_language', null ) ) ) );
+		// Force loop string registration before reading status. Closes a race
+		// where a loop was just created (or the page is loaded fresh) and
+		// register_loop_strings hadn't run yet for this request lifecycle —
+		// status would otherwise come back empty. Idempotent against the
+		// transient hash gate added in v1.2.1: a no-op when nothing changed.
+		// $force_context = true bypasses the admin/REST guard so this works
+		// from the Etch builder frontend (?etch=magic) too.
+		if ( $loops_unlocked ) {
+			$this->loop_translator->register_loop_strings( true );
+		}
 		$all_loop_statuses  = $loops_unlocked ? $this->data_query->get_loop_string_statuses( $all_loop_names, $non_default ) : array();
 		$context_loop_statuses = array_intersect_key( $all_loop_statuses, array_flip( $context_loop_names ) );
 

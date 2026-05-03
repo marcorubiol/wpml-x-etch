@@ -98,7 +98,7 @@ class Plugin
             $job_manager,
             $panel_config,
         );
-        $this->builder_panel = new BuilderPanel( $this->meta_sync, $status_resolver, $data_query, $job_manager, $panel_config, $resync_handler, $ai_settings, $this->license_manager );
+        $this->builder_panel = new BuilderPanel( $this->meta_sync, $status_resolver, $data_query, $job_manager, $panel_config, $resync_handler, $ai_settings, $this->license_manager, $this->loop_translator );
         $this->dynamic_language_data = new DynamicLanguageData();
 
         // Update checker runs regardless of Etch/WPML being active.
