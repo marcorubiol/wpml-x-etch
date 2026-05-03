@@ -103,7 +103,7 @@ class AiClient {
 				'content-type'      => 'application/json',
 			),
 			'body' => wp_json_encode( array(
-				'model'       => 'claude-sonnet-4-20250514',
+				'model'       => apply_filters( 'zs_wxe_ai_model_claude', 'claude-sonnet-4-20250514' ),
 				'max_tokens'  => 4096,
 				'temperature' => 0,
 				'system'      => $system_prompt,
@@ -127,7 +127,7 @@ class AiClient {
 				'Content-Type'  => 'application/json',
 			),
 			'body' => wp_json_encode( array(
-				'model'       => 'gpt-4o-mini',
+				'model'       => apply_filters( 'zs_wxe_ai_model_openai', 'gpt-4o-mini' ),
 				'temperature' => 0,
 				'messages'    => array(
 					array( 'role' => 'system', 'content' => $system_prompt ),

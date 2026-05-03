@@ -98,9 +98,10 @@ class TranslationRoutes extends BaseRoute {
 				'callback' => array( $this, 'get_pill_statuses' ),
 			),
 			array(
-				'route'    => '/toggle-loop-preset',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'toggle_loop_preset' ),
+				'route'              => '/toggle-loop-preset',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'toggle_loop_preset' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
 				'route'    => '/resync',
@@ -115,9 +116,10 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/resync/all',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'resync_all' ),
+				'route'              => '/resync/all',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'resync_all' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
 				'route'    => '/resync/status',
@@ -144,25 +146,29 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/ai/settings',
-				'methods'  => 'GET',
-				'callback' => array( $this, 'get_ai_settings' ),
+				'route'              => '/ai/settings',
+				'methods'            => 'GET',
+				'callback'           => array( $this, 'get_ai_settings' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
-				'route'    => '/ai/settings',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'save_ai_settings' ),
+				'route'              => '/ai/settings',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'save_ai_settings' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
-				'route'    => '/ai/test',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'test_ai_connection' ),
+				'route'              => '/ai/test',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'test_ai_connection' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
-				'route'    => '/ai-translate',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'ai_translate' ),
-				'args'     => array(
+				'route'              => '/ai-translate',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'ai_translate' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
 					'post_id'      => array(
 						'required'          => true,
 						'type'              => 'integer',
@@ -187,10 +193,11 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/ai-translate-all',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'ai_translate_all' ),
-				'args'     => array(
+				'route'              => '/ai-translate-all',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'ai_translate_all' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
 					'post_id'      => array(
 						'required'          => true,
 						'type'              => 'integer',
@@ -210,10 +217,11 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/ai-translate-loop',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'ai_translate_loop' ),
-				'args'     => array(
+				'route'              => '/ai-translate-loop',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'ai_translate_loop' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
 					'loop_id'     => array(
 						'required'          => true,
 						'type'              => 'string',
@@ -231,10 +239,11 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/ai-translate-loop-all',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'ai_translate_loop_all' ),
-				'args'     => array(
+				'route'              => '/ai-translate-loop-all',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'ai_translate_loop_all' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
 					'loop_id' => array(
 						'required'          => true,
 						'type'              => 'string',
@@ -248,10 +257,11 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/license/activate',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'license_activate' ),
-				'args'     => array(
+				'route'              => '/license/activate',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'license_activate' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
+				'args'               => array(
 					'key' => array(
 						'required'          => true,
 						'type'              => 'string',
@@ -260,14 +270,16 @@ class TranslationRoutes extends BaseRoute {
 				),
 			),
 			array(
-				'route'    => '/license/deactivate',
-				'methods'  => 'POST',
-				'callback' => array( $this, 'license_deactivate' ),
+				'route'              => '/license/deactivate',
+				'methods'            => 'POST',
+				'callback'           => array( $this, 'license_deactivate' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 			array(
-				'route'    => '/license/status',
-				'methods'  => 'GET',
-				'callback' => array( $this, 'license_status' ),
+				'route'              => '/license/status',
+				'methods'            => 'GET',
+				'callback'           => array( $this, 'license_status' ),
+				'permission_callback' => array( $this, 'has_admin_access' ),
 			),
 		);
 	}

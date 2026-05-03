@@ -287,13 +287,18 @@ class UpdateChecker implements SubscriberInterface {
 			return null;
 		}
 
-		// Look for zip and readme assets in the release.
+		// Look for the exact public zip and readme assets in the release.
+		// Match `wpml-x-etch.zip` only — not `wpml-x-etch-free.zip` /
+		// `-supporter.zip` / `-pro.zip`, which the build script also produces
+		// when run locally. If the workflow ever uploads multiple zips, this
+		// guarantees the public-tier asset is selected and not the alphabetical
+		// first one (which would silently downgrade installations).
 		$zip_url    = '';
 		$readme_url = '';
 		if ( ! empty( $data['assets'] ) ) {
 			foreach ( $data['assets'] as $asset ) {
 				$name = $asset['name'] ?? '';
-				if ( '' === $zip_url && str_ends_with( $name, '.zip' ) ) {
+				if ( '' === $zip_url && 'wpml-x-etch.zip' === $name ) {
 					$zip_url = $asset['browser_download_url'];
 				} elseif ( '' === $readme_url && 'readme.txt' === $name ) {
 					$readme_url = $asset['browser_download_url'];

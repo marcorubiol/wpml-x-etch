@@ -1,9 +1,19 @@
 
 // Prevents XSS when interpolating dynamic strings into innerHTML.
+// Escapes the OWASP-recommended set: &, <, >, ", ', /. The previous
+// textContent → innerHTML technique escaped only &, <, > (the HTML text
+// serialization spec), leaving " and ' unescaped — which broke out of
+// quoted-attribute contexts (title=, alt=, data-*=, aria-label=).
+const ESCAPE_HTML_MAP = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+  "/": "&#x2F;",
+};
 export function escapeHtml(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
+  return String(s ?? "").replace(/[&<>"'/]/g, (c) => ESCAPE_HTML_MAP[c]);
 }
 
 // Gracefully degrades when locking module is not loaded

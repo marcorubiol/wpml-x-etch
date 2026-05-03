@@ -424,7 +424,10 @@ class AiTranslationHandler {
 		return true;
 	}
 
-	private function get_language_name( string $code ): string {
+	private function get_language_name( ?string $code ): string {
+		if ( null === $code || '' === $code ) {
+			return '';
+		}
 		$languages = apply_filters( 'wpml_active_languages', null, 'skip_missing=0' );
 		if ( is_array( $languages ) && isset( $languages[ $code ] ) ) {
 			return $languages[ $code ]['native_name'] ?? $code;

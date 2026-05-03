@@ -349,3 +349,35 @@ Investigated April 2026. If WPML adds a review status sync API in the future, re
 |---|---|---|
 | `_zs_wxe_values` | Original post | Sorted array of translatable text values. Used for change detection. |
 | `_zs_wxe_component_refs` | Pages/posts | JSON array of component (wp_block) IDs used in the post. Enables reverse-lookup for component change propagation. |
+
+## Frontend XSS audit — 2026-05-03
+
+Full audit of `src/js/` performed for the v1.1.0 release. No exploitable
+vectors found. Summary of invariants the audit confirmed:
+
+- **`escapeHtml`** (`src/js/utils.js`) escapes the OWASP set
+  (`& < > " ' /`) and is null/undefined-safe. All ~80 dynamic
+  interpolations into `innerHTML` go through it. Hardened in v1.1.0
+  after a prior implementation (`textContent` → `innerHTML`) was found
+  to leave `"` and `'` unescaped, enabling attribute-context breakouts
+  on post titles, language names, loop names, and tooltips.
+- **No `eval`, `new Function`, `document.write`, `insertAdjacentHTML`,
+  or `setTimeout(string)`** in the codebase.
+- **No `setAttribute('href', ...)` or `setAttribute('src', ...)`** with
+  dynamic values. Static `data-*` and `aria-*` attributes only.
+- REST error messages from WPML/ATE/AI providers reach the DOM via
+  `textContent` (or `data-tooltip` → `textContent`), never via
+  `innerHTML`.
+
+Known minor non-issues (intentional defer):
+
+- `escapeHtml` does not validate URL schemes (`javascript:`, `data:`).
+  All URL sources currently come from server-trusted PHP (wp-admin
+  paths, WPML flag CDN). A `safeUrl()` helper would be defense-in-depth.
+- `target="_blank"` links lack `rel="noopener"` in some panel buttons.
+  Targets are wp-admin only — no real tabnabbing surface.
+- A single `escapeHtml` double-escape in `translation.js:56` (cosmetic,
+  not a vector — would render `&amp;` literal in an edge case).
+
+Re-run the audit on any major UI rewrite or when adding a new dynamic
+data source to the panel.
