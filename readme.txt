@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.9
+Stable tag: 1.0.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ This happens when translations were started without the plugin. Cancel stuck job
 No. Built specifically for Etch.
 
 == Changelog ==
+
+= 1.0.10 =
+* Fix: pages and posts authored in the Classic Editor or plain Gutenberg whose Etch template renders the body via `{@post-content}` no longer revert to the original language after WPML completes a translation. The post-translation handler was unconditionally rewriting the translated post's `post_content` from the original — even when the original had zero Etch blocks and there was nothing for the plugin to layer on top — silently undoing WPML's translation. The handler now short-circuits when the original `post_content` contains no `wp:etch/*` blocks, leaving WPML's output untouched. Etch-authored content is unaffected.
 
 = 1.0.9 =
 * Polish: loop and component cards in the main content area get a touch more vertical padding when they contain a single language row, so their internal proportions match the multi-language layout instead of looking cramped.

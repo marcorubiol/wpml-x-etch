@@ -101,6 +101,20 @@ class ContentTranslationHandler implements SubscriberInterface {
 	 * Apply Etch translations to a single translated post's content.
 	 */
 	public function apply_etch_translations( int $original_post_id, int $translated_post_id, string $lang ): void {
+		// Always rebuild from original — translated post may contain stale content.
+		$original_post = get_post( $original_post_id );
+		if ( ! $original_post ) {
+			return;
+		}
+
+		// Skip posts whose post_content has no Etch blocks (e.g. Classic Editor or
+		// plain Gutenberg pages rendered through an Etch template via {@post-content}).
+		// Without this guard, the always-write below overwrites WPML's translated
+		// post_content with the original, undoing the translation.
+		if ( ! str_contains( $original_post->post_content, '<!-- wp:etch/' ) ) {
+			return;
+		}
+
 		$translations = $this->get_etch_translations( $original_post_id, $lang );
 
 		if ( empty( $translations ) ) {
@@ -109,12 +123,6 @@ class ContentTranslationHandler implements SubscriberInterface {
 				'translated_post_id' => $translated_post_id,
 				'lang'               => $lang,
 			) );
-		}
-
-		// Always rebuild from original — translated post may contain stale content.
-		$original_post = get_post( $original_post_id );
-		if ( ! $original_post ) {
-			return;
 		}
 
 		$blocks  = parse_blocks( $original_post->post_content );
