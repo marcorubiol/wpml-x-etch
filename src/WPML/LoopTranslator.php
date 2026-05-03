@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace WpmlXEtch\WPML;
 
 use WpmlXEtch\Core\SubscriberInterface;
+use WpmlXEtch\Utils\Logger;
 
 class LoopTranslator implements SubscriberInterface {
 
@@ -72,11 +73,37 @@ class LoopTranslator implements SubscriberInterface {
 			return;
 		}
 
+		// Schema sniff: if the first non-reserved loop deviates from the shape we
+		// know how to walk, bail loudly instead of silently registering nothing.
+		// Etch ETCH_LOOPS_EXPECTED_SCHEMA = '1.x' (array name => string, config => array(type, data => array)).
+		foreach ( $loops as $sample_id => $sample ) {
+			if ( in_array( $sample_id, self::RESERVED_LOOP_IDS, true ) ) {
+				continue;
+			}
+			if ( ! is_array( $sample )
+				|| ! isset( $sample['name'], $sample['config'] )
+				|| ! is_string( $sample['name'] )
+				|| ! is_array( $sample['config'] )
+				|| ! isset( $sample['config']['type'] )
+				|| ! is_string( $sample['config']['type'] )
+				|| ( isset( $sample['config']['data'] ) && ! is_array( $sample['config']['data'] ) )
+			) {
+				Logger::warning( 'etch_loops shape unexpected — bailing register_loop_strings', array(
+					'loop_id'        => (string) $sample_id,
+					'sample_keys'    => is_array( $sample ) ? array_keys( $sample ) : gettype( $sample ),
+					'expected_shape' => '1.x: name=>string, config=>array(type=>string, data=>array)',
+				) );
+				return;
+			}
+			break;
+		}
+
 		// One-time cleanup of strings registered before reserved-loop filtering existed.
 		$this->maybe_cleanup_reserved_loop_strings( $loops );
 
 		// Collect all current string names so we can clean up stale ones.
 		$current_names = array();
+		$loops_walked  = 0;
 
 		foreach ( $loops as $loop_id => $loop ) {
 			if ( in_array( $loop_id, self::RESERVED_LOOP_IDS, true ) ) {
@@ -100,7 +127,14 @@ class LoopTranslator implements SubscriberInterface {
 				icl_register_string( self::CONTEXT, $name, $value );
 				$current_names[] = $name;
 			} );
+
+			$loops_walked++;
 		}
+
+		Logger::info( 'register_loop_strings done', array(
+			'loops_walked'      => $loops_walked,
+			'strings_registered' => count( $current_names ),
+		) );
 
 		// Remove orphaned strings no longer present in any loop.
 		$this->cleanup_stale_loop_strings( $current_names );
@@ -145,11 +179,29 @@ class LoopTranslator implements SubscriberInterface {
 			"DELETE FROM {$wpdb->prefix}icl_string_translations WHERE string_id IN ({$placeholders})",
 			...$stale_ids
 		) );
+		if ( $wpdb->last_error ) {
+			Logger::error( 'cleanup_stale_loop_strings: failed to delete translations', array(
+				'db_error'  => $wpdb->last_error,
+				'stale_ids' => count( $stale_ids ),
+			) );
+			return;
+		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->query( $wpdb->prepare(
 			"DELETE FROM {$wpdb->prefix}icl_strings WHERE id IN ({$placeholders})",
 			...$stale_ids
+		) );
+		if ( $wpdb->last_error ) {
+			Logger::error( 'cleanup_stale_loop_strings: failed to delete strings', array(
+				'db_error'  => $wpdb->last_error,
+				'stale_ids' => count( $stale_ids ),
+			) );
+			return;
+		}
+
+		Logger::info( 'cleanup_stale_loop_strings: pruned', array(
+			'stale_count' => count( $stale_ids ),
 		) );
 	}
 
@@ -175,6 +227,21 @@ class LoopTranslator implements SubscriberInterface {
 			return $loops;
 		}
 
+		// Per-request memoization. option_etch_loops fires N times per frontend
+		// request (Etch core, themes, third-party). Walking + DB map lookup
+		// once per current language is enough; trade-off is that mid-request
+		// writes to icl_string_translations won't reflect until next request.
+		// Cache only kicks in after `wp` has fired — earlier calls would
+		// freeze a $loops snapshot whose wpml-languages URLs haven't been
+		// refreshed yet, breaking the language switcher.
+		static $cache = array();
+		$cacheable = (bool) did_action( 'wp' );
+		$current   = apply_filters( 'wpml_current_language', null );
+		$cache_key = (string) ( $current ?? '__no_lang__' );
+		if ( $cacheable && array_key_exists( $cache_key, $cache ) ) {
+			return $cache[ $cache_key ];
+		}
+
 		// Language switcher loop: refresh URLs to point to the current page
 		// in each language. Runs for ALL languages (including default)
 		// because the URLs are always dynamic.
@@ -185,14 +252,17 @@ class LoopTranslator implements SubscriberInterface {
 			}
 		}
 
-		$current = apply_filters( 'wpml_current_language', null );
 		$default = apply_filters( 'wpml_default_language', null );
 		if ( ! $current || $current === $default ) {
+			if ( $cacheable ) {
+				$cache[ $cache_key ] = $loops;
+			}
 			return $loops;
 		}
 
 		// Single batch query: load ALL translations for this context + language.
-		$translation_map = $this->load_translation_map( $current );
+		$translation_map  = $this->load_translation_map( $current );
+		$loops_translated = 0;
 
 		foreach ( $loops as $loop_id => &$loop ) {
 			if ( in_array( $loop_id, self::RESERVED_LOOP_IDS, true ) ) {
@@ -213,9 +283,19 @@ class LoopTranslator implements SubscriberInterface {
 			$translatable_fields = $this->get_translatable_fields( $loop_id );
 
 			$loop['config']['data'] = $this->translate_items( $data, $loop_id, $loop_name, $translatable_fields, $translation_map );
+			$loops_translated++;
 		}
 		unset( $loop );
 
+		Logger::info( 'translate_loops applied', array(
+			'lang'             => $current,
+			'loops_translated' => $loops_translated,
+			'map_size'         => count( $translation_map ),
+		) );
+
+		if ( $cacheable ) {
+			$cache[ $cache_key ] = $loops;
+		}
 		return $loops;
 	}
 
@@ -543,12 +623,26 @@ class LoopTranslator implements SubscriberInterface {
 				"DELETE FROM {$wpdb->prefix}icl_string_translations WHERE string_id IN ({$placeholders})",
 				...$string_ids
 			) );
+			if ( $wpdb->last_error ) {
+				Logger::error( 'maybe_cleanup_reserved_loop_strings: failed to delete translations', array(
+					'loop_id'  => $loop_id,
+					'db_error' => $wpdb->last_error,
+				) );
+				return; // Don't mark cleanup as done — try again next request.
+			}
 
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery
 			$wpdb->query( $wpdb->prepare(
 				"DELETE FROM {$wpdb->prefix}icl_strings WHERE id IN ({$placeholders})",
 				...$string_ids
 			) );
+			if ( $wpdb->last_error ) {
+				Logger::error( 'maybe_cleanup_reserved_loop_strings: failed to delete strings', array(
+					'loop_id'  => $loop_id,
+					'db_error' => $wpdb->last_error,
+				) );
+				return;
+			}
 		}
 
 		update_option( $option_key, 1, false );

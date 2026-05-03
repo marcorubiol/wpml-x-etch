@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,13 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.0 =
+* Performance: per-request memoization of `translate_loops`. The `option_etch_loops` filter fires many times per frontend request (Etch core, themes, third-party plugins), and each call previously walked every loop and rebuilt the translation map. Results are now cached per request, keyed by current language. Cache only kicks in after the `wp` action has fired so the language switcher's URL refresh (which depends on the resolved current page) still runs on early calls.
+* Performance: replaced the N+1 query loop in AI loop translation with a single batched `WHERE string_id IN (...)` lookup against `icl_string_translations`. Loops with 100 strings used to issue 100 queries to detect already-translated values; they now issue 1.
+* Observability: `Logger::info` calls in the loop subsystem lifecycle (`register_loop_strings` count summary, `cleanup_stale_loop_strings` pruned count, `translate_loops` per-request stats). `Logger::error` on `$wpdb->last_error` after each cleanup `DELETE` so silent half-state failures surface in `debug.log` (gated by `ZS_WXE_DEBUG_LOG_LEVEL >= 4`, off by default).
+* UX: AI loop translation responses now include `missing_count` when the AI provider returns fewer translations than requested (partial response). Lets callers detect that a follow-up round is needed instead of guessing from `translated_count` alone.
+* Defensive: schema sniff for `etch_loops` shape on `register_loop_strings`. The first non-reserved loop is checked against the expected `1.x` shape (`name`, `config.type`, `config.data`); if Etch ever changes the shape we now log a warning and bail loudly instead of silently registering nothing. Sample size is one — sufficient unless Etch starts mixing shapes in the same option.
 
 = 1.1.1 =
 * Fix: Etch templates that reference components of post types other than `wp_block` (such as `wp_template_part`) could not be translated since v1.1.0. The new `component_id` validation introduced in v1.1.0 was over-restrictive, hardcoding `wp_block` as the only acceptable post type for components — `/translate-url` returned 404 ("invalid_component") for every other type. The validation now accepts any post type that WPML reports as translatable via `wpml_is_translated_post_type`, which is the same gate `validate_post()` uses for the page itself. Original intent of the validation (rejecting arbitrary non-translatable IDs) is preserved.

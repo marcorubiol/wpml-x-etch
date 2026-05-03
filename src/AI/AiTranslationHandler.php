@@ -294,22 +294,32 @@ class AiTranslationHandler {
 		$untranslated = array();
 		$skipped      = 0;
 
-		foreach ( $strings as $str ) {
-			if ( $force ) {
-				$untranslated[ $str->value ] = (int) $str->id;
-				continue;
+		// Single batch query: fetch existing translations for all strings in this
+		// loop instead of N separate get_var() calls (was N+1 on large loops).
+		$existing_map = array();
+		if ( ! $force ) {
+			$string_ids = array_map( static fn( $s ) => (int) $s->id, $strings );
+			if ( ! empty( $string_ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $string_ids ), '%d' ) );
+				$query_args   = array_merge( $string_ids, array( $target_lang ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$rows = $wpdb->get_results( $wpdb->prepare(
+					"SELECT string_id FROM {$wpdb->prefix}icl_string_translations
+					 WHERE string_id IN ({$placeholders}) AND language = %s AND status = 10",
+					...$query_args
+				) );
+				if ( $rows ) {
+					foreach ( $rows as $row ) {
+						$existing_map[ (int) $row->string_id ] = true;
+					}
+				}
 			}
+		}
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-			$existing = $wpdb->get_var( $wpdb->prepare(
-				"SELECT value FROM {$wpdb->prefix}icl_string_translations
-				 WHERE string_id = %d AND language = %s AND status = 10",
-				$str->id,
-				$target_lang
-			) );
-
-			if ( null === $existing ) {
-				$untranslated[ $str->value ] = (int) $str->id;
+		foreach ( $strings as $str ) {
+			$id = (int) $str->id;
+			if ( $force || ! isset( $existing_map[ $id ] ) ) {
+				$untranslated[ $str->value ] = $id;
 			} else {
 				$skipped++;
 			}
@@ -364,6 +374,13 @@ class AiTranslationHandler {
 
 		if ( $failed_count > 0 ) {
 			$response['failed_count'] = $failed_count;
+		}
+
+		// AI providers can return partial responses (e.g. 7 of 10 strings).
+		// Surface the gap explicitly so callers know a follow-up round is needed.
+		$missing_count = count( $untranslated ) - $translated_count - $failed_count;
+		if ( $missing_count > 0 ) {
+			$response['missing_count'] = $missing_count;
 		}
 
 		return $response;
