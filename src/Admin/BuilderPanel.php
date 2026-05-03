@@ -116,17 +116,26 @@ class BuilderPanel implements SubscriberInterface {
 	}
 
 	/**
-	 * Reject component_id values that don't point to a real wp_block post.
-	 * `translate` callers could otherwise create translation jobs for
-	 * arbitrary post IDs by passing them as component_id.
+	 * Reject component_id values that don't point to a real translatable post.
+	 * `translate` callers could otherwise pass arbitrary IDs and create
+	 * translation jobs for posts WPML doesn't manage.
+	 *
+	 * Accepts any translatable post type, not just `wp_block` — Etch templates
+	 * reference components of multiple types (wp_block, wp_template_part, etc.),
+	 * and v1.1.0's stricter `wp_block`-only check broke template translation
+	 * (regression hotfixed in v1.1.1).
 	 */
 	private function validate_component_id( int $component_id ): ?WP_Error {
 		if ( 0 === $component_id ) {
 			return null;
 		}
 		$post = get_post( $component_id );
-		if ( ! $post || 'wp_block' !== $post->post_type ) {
+		if ( ! $post ) {
 			return new WP_Error( 'invalid_component', 'Component not found', array( 'status' => 404 ) );
+		}
+		$is_translatable = (bool) apply_filters( 'wpml_is_translated_post_type', false, $post->post_type );
+		if ( ! $is_translatable ) {
+			return new WP_Error( 'invalid_component', 'Component post type is not translatable', array( 'status' => 400 ) );
 		}
 		return null;
 	}

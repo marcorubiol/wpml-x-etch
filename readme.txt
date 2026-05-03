@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,9 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix: Etch templates that reference components of post types other than `wp_block` (such as `wp_template_part`) could not be translated since v1.1.0. The new `component_id` validation introduced in v1.1.0 was over-restrictive, hardcoding `wp_block` as the only acceptable post type for components — `/translate-url` returned 404 ("invalid_component") for every other type. The validation now accepts any post type that WPML reports as translatable via `wpml_is_translated_post_type`, which is the same gate `validate_post()` uses for the page itself. Original intent of the validation (rejecting arbitrary non-translatable IDs) is preserved.
 
 = 1.1.0 =
 * Security: hardened the JS HTML-escape helper used across the panel UI. The previous implementation (`textContent → innerHTML`) escaped only `<`, `>`, and `&`, leaving `"` and `'` unescaped. Several attribute-context interpolations (post titles, language names, loop names, tooltips) were therefore vulnerable to attribute-breakout XSS by any user with `edit_posts` capability — the payload would fire when an admin opened the WPML x Etch panel on the affected post. The helper now escapes the full OWASP set (`& < > " ' /`); no call-site changes were needed.
