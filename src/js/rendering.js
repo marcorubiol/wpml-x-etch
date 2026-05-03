@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { buildPageStatus, buildComponentsList, buildItemCards, buildSectionHeader, buildAllContentHtml, buildEmptyState, buildNotTranslatableState, buildSkeleton, buildLoopCards, buildLoopsOnThisPage } from './builders.js';
-import { fetchPillData } from './data.js';
+import { fetchPillData, refreshLanguagesStatus } from './data.js';
 import { checkLock, msg, escapeHtml } from './utils.js';
 import { filterItems } from './filters.js';
 import { updateGlobalAiButtonState } from './aiTranslate.js';
@@ -118,6 +118,22 @@ export function renderTypePill(pillId, container) {
   if (pillId === 'json-loops') {
     const loops = window.wxeBridge.jsonLoops || [];
     container.innerHTML = buildLoopCards(loops);
+
+    // The loop list and statuses can change in another tab/window after page
+    // load (Etch save → update_option_etch_loops). Refresh in background so
+    // newly-created loops appear without a wp-admin reload. Only re-render
+    // if the loop list actually changed (avoids a flash on every tab click).
+    const prevSig = loops.map(l => `${l.id}:${l.name}`).sort().join('|');
+    refreshLanguagesStatus().then(() => {
+      if (state.activePill !== 'json-loops') return;
+      const live = document.getElementById('wxe-pill-content');
+      if (!live) return;
+      const fresh = window.wxeBridge.jsonLoops || [];
+      const newSig = fresh.map(l => `${l.id}:${l.name}`).sort().join('|');
+      if (newSig !== prevSig) {
+        live.innerHTML = buildLoopCards(fresh);
+      }
+    });
     return;
   }
 

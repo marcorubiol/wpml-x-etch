@@ -95,6 +95,11 @@ async function _doRefreshLanguagesStatus() {
       window.wxeBridge.languages = data.languages || data;
       window.wxeBridge.components = data.components || [];
       window.wxeBridge.loopStatuses = data.loopStatuses || window.wxeBridge.loopStatuses || {};
+      // Update jsonLoops too so a loop created in another tab/window since
+      // page load actually appears in the panel without a wp-admin reload.
+      if (Array.isArray(data.jsonLoops)) {
+        window.wxeBridge.jsonLoops = data.jsonLoops;
+      }
       if (data.isTranslatable !== undefined) {
         window.wxeBridge.isTranslatable = data.isTranslatable;
       }

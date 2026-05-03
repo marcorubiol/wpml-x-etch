@@ -697,6 +697,7 @@ class BuilderPanel implements SubscriberInterface {
 		return array(
 			'languages'       => $state['lang_data'],
 			'components'      => $state['components'],
+			'jsonLoops'       => $state['json_loops'],
 			'loopStatuses'    => $state['all_loop_statuses'],
 			'postTitle'       => $state['post_title'],
 			'postTypeLabel'   => $state['post_type_label'],
