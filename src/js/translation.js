@@ -53,7 +53,7 @@ export async function openTranslation(lang, componentId = null) {
       throw new Error(m.saveFailed || 'Save failed.');
     }
 
-    setStatusLoading((m.preparing || 'Preparing %s\u2026').replace('%s', escapeHtml(lang.native_name)));
+    setStatusLoading((m.preparing || 'Preparing %s\u2026').replace('%s', lang.native_name));
 
     const MAX_RETRIES = 5;
     const BASE_DELAY_MS = 500;

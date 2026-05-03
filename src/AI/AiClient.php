@@ -148,17 +148,30 @@ class AiClient {
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
+
+		// Surface the provider's own error message when present. Anthropic and
+		// OpenAI both return JSON of the shape { "error": { "message": "..." } }
+		// for 4xx/5xx responses. Falls back to the bare status code if the body
+		// is missing or malformed.
+		$provider_message = $this->extract_provider_error_message( $response );
+
 		if ( 401 === $code || 403 === $code ) {
-			return new \WP_Error( 'invalid_key', 'Invalid API key', array( 'status' => 401 ) );
+			$msg = $provider_message ?: 'Invalid API key';
+			return new \WP_Error( 'invalid_key', $msg, array( 'status' => 401 ) );
 		}
 		if ( 429 === $code ) {
-			return new \WP_Error( 'rate_limited', 'Rate limited — try again in a moment', array( 'status' => 429 ) );
+			$msg = $provider_message ?: 'Rate limited — try again in a moment';
+			return new \WP_Error( 'rate_limited', $msg, array( 'status' => 429 ) );
 		}
 		if ( $code >= 500 ) {
-			return new \WP_Error( 'provider_error', 'AI provider error', array( 'status' => 502 ) );
+			$msg = $provider_message ? 'AI provider error: ' . $provider_message : 'AI provider error';
+			return new \WP_Error( 'provider_error', $msg, array( 'status' => 502 ) );
 		}
 		if ( $code < 200 || $code >= 300 ) {
-			return new \WP_Error( 'api_error', 'Unexpected response: ' . $code, array( 'status' => 502 ) );
+			$msg = $provider_message
+				? sprintf( 'Unexpected response %d: %s', $code, $provider_message )
+				: 'Unexpected response: ' . $code;
+			return new \WP_Error( 'api_error', $msg, array( 'status' => 502 ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
@@ -205,5 +218,37 @@ class AiClient {
 		}
 
 		return $validated;
+	}
+
+	/**
+	 * Extract a human-readable error message from a non-2xx provider response.
+	 * Handles the JSON shapes used by both Anthropic and OpenAI; returns ''
+	 * if no recognisable message is present.
+	 */
+	private function extract_provider_error_message( array $response ): string {
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( '' === $body ) {
+			return '';
+		}
+		$data = json_decode( $body, true );
+		if ( ! is_array( $data ) ) {
+			return '';
+		}
+		// { "error": { "message": "...", "type": "..." } }  → both providers
+		if ( isset( $data['error'] ) && is_array( $data['error'] ) ) {
+			$msg = $data['error']['message'] ?? '';
+			if ( is_string( $msg ) && '' !== $msg ) {
+				return $msg;
+			}
+		}
+		// { "error": "string" } — rarer but seen
+		if ( isset( $data['error'] ) && is_string( $data['error'] ) && '' !== $data['error'] ) {
+			return $data['error'];
+		}
+		// { "message": "..." } — some proxy / gateway responses
+		if ( isset( $data['message'] ) && is_string( $data['message'] ) && '' !== $data['message'] ) {
+			return $data['message'];
+		}
+		return '';
 	}
 }

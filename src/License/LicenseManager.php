@@ -322,7 +322,9 @@ class LicenseManager {
 		if ( function_exists( 'wp_encrypt' ) ) {
 			$key = wp_encrypt( $key );
 		}
-		update_option( self::OPT_KEY, $key );
+		// autoload=false — license key is read by admin/license flows only,
+		// no need to load it on every front-end request.
+		update_option( self::OPT_KEY, $key, false );
 	}
 
 	private function get_stored_key(): string {
@@ -338,7 +340,7 @@ class LicenseManager {
 	}
 
 	private function store_data( array $data ): void {
-		update_option( self::OPT_DATA, $data );
+		update_option( self::OPT_DATA, $data, false );
 	}
 
 	private function get_stored_data(): array {

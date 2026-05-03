@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { escapeHtml, msg } from './utils.js';
+import { escapeHtml, safeUrl, msg } from './utils.js';
 
 /**
  * Languages filter — a wrap of compact 1-click chips.
@@ -30,7 +30,7 @@ function buildChipHtml(code, lang) {
   const activeCls  = isSelected ? ' wxe-pill--active' : '';
   const name       = lang.native_name || code;
   return `<button type="button" class="wxe-chip wxe-lang-chip wxe-lang-btn wxe-lang-item${activeCls}" data-lang-code="${escapeHtml(code)}" title="${escapeHtml(name)}" aria-label="${escapeHtml(name)}" aria-pressed="${isSelected ? 'true' : 'false'}">
-    <img src="${escapeHtml(lang.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
+    <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="" width="16" height="11" class="wxe-flag">
     <span>${escapeHtml(codeLabel)}</span>
   </button>`;
 }
@@ -51,7 +51,7 @@ export function buildLangPickerHtml() {
     const [code, lang] = otherLangs[0];
     return `<div class="wxe-lang-filter wxe-lang-filter--static" id="wxe-lang-filter">
       <div class="wxe-chip wxe-lang-chip wxe-lang-chip--static" aria-label="${escapeHtml(lang.native_name || code)}">
-        <img src="${escapeHtml(lang.flag_url)}" alt="" width="16" height="11" class="wxe-flag">
+        <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="" width="16" height="11" class="wxe-flag">
         <span>${escapeHtml((code || '').slice(0, 2).toUpperCase())}</span>
       </div>
     </div>`;

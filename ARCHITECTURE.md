@@ -6,11 +6,14 @@ Etch uses **self-managed string registration** with its own WPML package kind (`
 separate from WPML's built-in Gutenberg handler (`Gutenberg`). This is the same pattern
 used by Elementor, Beaver Builder, and Divi.
 
-`wpml-config.xml` sets `translate="0"` for all Etch blocks except `etch/element` which
-has `translate="1"` for href attributes (link auto-translation). WPML's Gutenberg handler
-ignores the `translate="0"` blocks. `StringHandler::register_post_strings()` hooks into
-`wpml_page_builder_register_strings` at priority 20 (after WPML's handler at 10) and
-registers only real translatable strings via `wpml_register_string`.
+`wpml-config.xml` sets `translate="0"` for **all** Etch blocks, including `etch/element`.
+WPML's Gutenberg handler therefore ignores them entirely. `StringHandler::register_post_strings()`
+hooks into `wpml_page_builder_register_strings` at priority 20 (after WPML's handler at 10) and
+registers only real translatable strings via `wpml_register_string`. Static `href` values from
+`etch/element` blocks are extracted by `ComponentParser` and registered as ordinary translatable
+strings inside the Etch package — they are **not** routed through WPML's `type="link"` /
+`WPML_Translate_Link_Targets` subsystem. Runtime substitution happens via `ContentTranslationHandler`
+like any other translated attribute.
 
 Source of truth: `ComponentParser::get_translatable_values()` — filters out dynamic
 expressions (`{variable}`, `{{"key":"{val}"}}`, `item.prop`) at parse time. Also extracts
@@ -349,6 +352,29 @@ Investigated April 2026. If WPML adds a review status sync API in the future, re
 |---|---|---|
 | `_zs_wxe_values` | Original post | Sorted array of translatable text values. Used for change detection. |
 | `_zs_wxe_component_refs` | Pages/posts | JSON array of component (wp_block) IDs used in the post. Enables reverse-lookup for component change propagation. |
+
+## Translated Etch meta is derived from original
+
+`TranslationSync::copy_etch_meta()` deletes every `etch_%` and `_etch_%`
+meta row on the translated post and re-inserts them from the original.
+This runs on `wpml_translation_update` and inside `ResyncHandler`. The
+invariant the rest of the codebase relies on:
+
+> Translated Etch meta is **not** independently editable. It is
+> synchronized from the original on every translation event.
+
+Consequences:
+
+- A user editing `etch_*` meta directly on a translated post will see
+  their changes overwritten next time WPML or the panel triggers a
+  resync. Don't expose per-language meta editing UI.
+- Any future feature that needs per-language Etch meta (e.g.
+  language-specific component overrides) requires lifting this invariant
+  — at minimum a parallel meta key namespace not covered by the wildcard
+  delete.
+- Third-party plugins that store unrelated meta under `etch_*` /
+  `_etch_*` prefixes on translated posts will have their data wiped.
+  Document this if a conflict appears.
 
 ## Frontend XSS audit — 2026-05-03
 

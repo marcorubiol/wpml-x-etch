@@ -16,6 +16,18 @@ export function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"'/]/g, (c) => ESCAPE_HTML_MAP[c]);
 }
 
+// Defense-in-depth: rejects javascript: and data: schemes before a URL
+// is interpolated into href= or src=. All current URL sources come from
+// server-trusted PHP, but this guards against a future regression where
+// a user-controlled URL could reach an attribute sink.
+export function safeUrl(s) {
+  const url = String(s ?? "").trim();
+  if (/^(javascript|data|vbscript):/i.test(url)) {
+    return "";
+  }
+  return url;
+}
+
 // Gracefully degrades when locking module is not loaded
 export function checkLock(action, ...args) {
   return window.WXELocking?.shouldBlockAction(action, ...args) || false;

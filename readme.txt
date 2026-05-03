@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.0.10
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,7 +55,40 @@ This happens when translations were started without the plugin. Cancel stuck job
 = Does this support other page builders? =
 No. Built specifically for Etch.
 
+= What does AI translation send to Anthropic / OpenAI? =
+AI translation is opt-in and admin-only. When an administrator clicks an AI translate button, the plugin sends the following to whichever provider is configured (Claude or OpenAI):
+
+* The translatable string values from the page or component (text content, component property values, JSON loop values).
+* The page title, used as context to disambiguate translations.
+* The glossary entries you configured in the AI settings panel, if any.
+* The source and target language names.
+
+The plugin does not send post IDs, user data, license keys, URLs, or anything outside the translatable strings of the content being translated. The provider's standard data-handling policy applies (Anthropic and OpenAI both honour their published retention and training policies for paid API usage).
+
+If the content you translate contains personal data of third parties, ensure you have a legal basis (consent, legitimate interest, etc.) under your jurisdiction before sending it to a third-party provider.
+
+= Where is my AI API key stored? =
+Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
+
 == Changelog ==
+
+= 1.1.0 =
+* Security: hardened the JS HTML-escape helper used across the panel UI. The previous implementation (`textContent → innerHTML`) escaped only `<`, `>`, and `&`, leaving `"` and `'` unescaped. Several attribute-context interpolations (post titles, language names, loop names, tooltips) were therefore vulnerable to attribute-breakout XSS by any user with `edit_posts` capability — the payload would fire when an admin opened the WPML x Etch panel on the affected post. The helper now escapes the full OWASP set (`& < > " ' /`); no call-site changes were needed.
+* Security: tightened REST permissions. AI configuration and execution (`/ai/settings`, `/ai/test`, `/ai-translate*`), license management (`/license/activate`, `/license/deactivate`, `/license/status`), site-wide operations (`/resync/all`, `/toggle-loop-preset`) now require `manage_options` instead of being available to any user with `translate` capability. Read-only panel endpoints and per-post resync remain accessible to translators.
+* Security: aligned the page-load payload (`wxeBridge`) with the REST permission split. License status injected via `wp_localize_script` is now reduced to `tier` + `is_valid` for users without `manage_options` (full payload — email, key_masked, expires_at — is admin-only). The `aiAccess` flag now requires `manage_options` in addition to license tier, so translators no longer see AI buttons that would only return 403. A new `canManageLicense` flag drives the license popup to render a read-only view for non-admins.
+* Security: added `safeUrl()` helper to strip `javascript:`, `data:`, and `vbscript:` schemes from URL values before they are interpolated into `href`/`src` attributes in the panel. Defense-in-depth — all current URL sources come from server-trusted PHP, but this guards against any future regression where a user-controlled URL could reach an attribute sink.
+* Security: completed `rel="noopener noreferrer"` on the three remaining `target="_blank"` panel links that lacked it. Footer links already had it; consistency now applied across all external links.
+* Hardening: `UpdateChecker` now matches the public release zip by exact filename (`wpml-x-etch.zip`) instead of selecting the first `.zip` asset. Prevents auto-update from picking the wrong tier-specific zip if a future workflow ever uploads multiple zips per release.
+* Reliability: AI prompt assembly no longer fatals when WPML returns a `null` default language code. `AiTranslationHandler::get_language_name()` now accepts `?string` and short-circuits cleanly on empty input.
+* Reliability: AI provider errors now surface the actual error message from Anthropic/OpenAI in the WP_Error returned to the panel — previously a 4xx/5xx response collapsed to a bare "Unexpected response: 404", losing the provider's explanation (e.g. "model not found", "insufficient quota").
+* Extensibility: AI model identifiers are now filterable. `apply_filters('zs_wxe_ai_model_claude', 'claude-sonnet-4-20250514')` and `apply_filters('zs_wxe_ai_model_openai', 'gpt-4o-mini')` let site owners pin or upgrade the model without forking the plugin.
+* UX: JSON loops with partially translated strings (some translated, some new since the last translation pass) now show `Needs Update` (orange) instead of `Not Translated` (red). The aggregation reuses WPML's existing status semantics — no new state, no new UI; loops that are 100% translated stay green, loops with zero translations stay red. Useful on large loops (navigation menus, listings) where adding one new item previously made the badge appear as if all prior translation work had been lost.
+* Robustness: license rate-limit transient is now scoped per user. The per-attempt cap was previously global, meaning one admin retrying could lock out other admins on multi-admin sites.
+* Robustness: REST input validation hardened. `target_lang` is now validated against `wpml_active_languages` before being used in `/translate-url`, AI translate, and AI translate-loop endpoints — previously an authorised caller could pass an arbitrary language code and pollute `icl_strings` / `icl_string_translations` with rows for languages WPML doesn't actually serve. `component_id` is now validated as a real `wp_block` post before being used to create or open a translation job.
+* Performance: license and AI options (`zs_wxe_license_key`, `zs_wxe_license_data`, `zs_wxe_ai_api_key`, `zs_wxe_ai_provider`, `zs_wxe_ai_tone`, `zs_wxe_ai_glossary`, `zs_wxe_ai_verified`) are now stored with `autoload=false`. They are read only inside admin/AI flows, so keeping them out of WordPress's `alloptions` cache shaves a small amount of memory off every front-end request.
+* Architecture docs: added a "Translated Etch meta is derived from original" invariant section to `ARCHITECTURE.md` documenting the wildcard `etch_%` / `_etch_%` meta sync behaviour, and a "Frontend XSS audit — 2026-05-03" section recording the audit performed for this release. Removed stale claims in `ARCHITECTURE.md` about `etch/element` href being translated via WPML's `type="link"` link-conversion subsystem — that mechanism was never wired in; the self-managed Etch package handles hrefs end-to-end like any other translatable string.
+* Docs: new FAQ entries in `readme.txt` covering exactly what content AI translation sends to Anthropic / OpenAI, the provider's data-handling policies, the user's compliance responsibility for third-party PII, and how/where the AI API key is stored.
+* Polish: removed a redundant `escapeHtml()` call in `translation.js` where the value was being escaped twice (once at interpolation, once again inside `setStatusLoading`), causing characters like `&` in language native names to render as `&amp;` in the loading overlay.
 
 = 1.0.10 =
 * Fix: pages and posts authored in the Classic Editor or plain Gutenberg whose Etch template renders the body via `{@post-content}` no longer revert to the original language after WPML completes a translation. The post-translation handler was unconditionally rewriting the translated post's `post_content` from the original — even when the original had zero Etch blocks and there was nothing for the plugin to layer on top — silently undoing WPML's translation. The handler now short-circuits when the original `post_content` contains no `wp:etch/*` blocks, leaving WPML's output untouched. Etch-authored content is unaffected.

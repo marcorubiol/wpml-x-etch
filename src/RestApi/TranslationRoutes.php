@@ -438,10 +438,16 @@ class TranslationRoutes extends BaseRoute {
 	}
 
 	/**
-	 * Simple rate limit for license endpoints: max 5 attempts per minute.
+	 * Simple rate limit for license endpoints: max 5 attempts per minute,
+	 * scoped per user. Endpoint is admin-only, but per-user keying still
+	 * matters on multi-admin sites so one admin retrying doesn't lock out
+	 * the others.
 	 */
 	private function is_license_rate_limited(): bool {
-		$transient = 'zs_wxe_license_attempts';
+		$user_id   = get_current_user_id();
+		$transient = $user_id > 0
+			? 'zs_wxe_license_attempts_' . $user_id
+			: 'zs_wxe_license_attempts_anon';
 		$attempts  = (int) get_transient( $transient );
 
 		if ( $attempts >= 5 ) {

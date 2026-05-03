@@ -49,10 +49,13 @@ class AiSettings {
 	}
 
 	public function save_settings( array $data ): void {
+		// All AI options are admin-only and read only inside admin/AI flows;
+		// passing autoload=false keeps them out of the alloptions cache that
+		// loads on every front-end request.
 		if ( isset( $data['provider'] ) ) {
 			$provider = sanitize_text_field( $data['provider'] );
 			if ( in_array( $provider, array( 'claude', 'openai', '' ), true ) ) {
-				update_option( self::OPT_PROVIDER, $provider );
+				update_option( self::OPT_PROVIDER, $provider, false );
 			}
 		}
 
@@ -60,18 +63,18 @@ class AiSettings {
 			delete_option( self::OPT_API_KEY );
 			delete_option( self::OPT_VERIFIED );
 		} elseif ( isset( $data['api_key'] ) && '' !== $data['api_key'] ) {
-			update_option( self::OPT_VERIFIED, false );
+			update_option( self::OPT_VERIFIED, false, false );
 			$key = sanitize_text_field( $data['api_key'] );
 			if ( function_exists( 'wp_encrypt' ) ) {
 				$key = wp_encrypt( $key );
 			}
-			update_option( self::OPT_API_KEY, $key );
+			update_option( self::OPT_API_KEY, $key, false );
 		}
 
 		if ( isset( $data['tone'] ) ) {
 			$tone = sanitize_text_field( $data['tone'] );
 			if ( in_array( $tone, array( 'formal', 'informal' ), true ) ) {
-				update_option( self::OPT_TONE, $tone );
+				update_option( self::OPT_TONE, $tone, false );
 			}
 		}
 
@@ -86,7 +89,7 @@ class AiSettings {
 					);
 				}
 			}
-			update_option( self::OPT_GLOSSARY, $clean );
+			update_option( self::OPT_GLOSSARY, $clean, false );
 		}
 	}
 
@@ -95,7 +98,7 @@ class AiSettings {
 	}
 
 	public function set_verified( bool $verified ): void {
-		update_option( self::OPT_VERIFIED, $verified );
+		update_option( self::OPT_VERIFIED, $verified, false );
 	}
 
 	public function get_settings_for_js(): array {

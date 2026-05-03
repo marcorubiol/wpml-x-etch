@@ -48,12 +48,43 @@ export function buildLicenseFooterHtml() {
   return `<div class="wxe-content-footer">${licenseBtn}${bmcHtml}</div>`;
 }
 
+function canManageLicense() {
+  return !!window.wxeBridge?.canManageLicense;
+}
+
 /**
  * Build the license popup overlay content.
  */
 function buildLicensePopupHtml() {
   const license = getLicense();
   const hasKey = !!license.key_masked;
+
+  // Non-admin viewers (translator role): no management actions, no PII.
+  // Mirrors the REST permission split so what is shown matches what the
+  // user can actually do.
+  if (!canManageLicense()) {
+    const tierLabel = license.tier === 'pro'
+      ? 'Pro'
+      : license.tier === 'supporter'
+        ? 'Supporter'
+        : 'Free';
+    const statusLabel = license.tier && !license.is_valid ? 'Expired' : (license.tier ? 'Active' : 'Not licensed');
+    const readOnlyHtml = `
+      <div class="wxe-license-info">
+        <div class="wxe-license-info-row"><span class="wxe-license-info-label">Status</span><span class="wxe-license-info-value">${escapeHtml(statusLabel)}</span></div>
+        <div class="wxe-license-info-row"><span class="wxe-license-info-label">Tier</span><span class="wxe-license-info-value">${escapeHtml(tierLabel)}</span></div>
+      </div>`;
+    return `
+      <div class="wxe-license-popup">
+        <div class="wxe-license-popup-header">
+          <span class="wxe-license-popup-title">License</span>
+          <button type="button" class="wxe-license-popup-close" id="wxe-license-popup-close">${ICON_CLOSE}</button>
+        </div>
+        <div class="wxe-license-popup-body">
+          ${readOnlyHtml}
+        </div>
+      </div>`;
+  }
 
   let statusHtml;
   if (hasKey && license.is_valid) {
@@ -238,8 +269,10 @@ async function refreshAfterLicenseChange() {
       bridge.lockingMode = bridge._defaultLockingMode || 'supporter';
     }
 
-    // Update AI access based on new tier.
-    bridge.aiAccess = bridge.lockingMode === 'pro';
+    // No need to update bridge.aiAccess here — page reload below resets the
+    // bridge from PHP, which now requires manage_options in addition to tier.
+    // Computing it client-side from tier alone would be wrong under the new
+    // permission model.
 
     // Re-render the footer.
     const footer = document.querySelector('.wxe-content-footer');

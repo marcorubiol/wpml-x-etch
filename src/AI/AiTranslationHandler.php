@@ -63,6 +63,22 @@ class AiTranslationHandler {
 			return new WP_Error( 'not_configured', 'AI provider not configured', array( 'status' => 400 ) );
 		}
 
+		// Validate target_lang against active WPML languages — without this,
+		// an attacker with the AI capability could pollute icl_string_translations
+		// with arbitrary language codes.
+		$active = apply_filters( 'wpml_active_languages', null, 'skip_missing=0' );
+		if ( ! is_array( $active ) || ! isset( $active[ $target_lang ] ) ) {
+			return new WP_Error( 'invalid_language', 'Unknown target language', array( 'status' => 400 ) );
+		}
+
+		// If a component is being translated, validate it points to a real wp_block.
+		if ( $component_id > 0 ) {
+			$comp_post = get_post( $component_id );
+			if ( ! $comp_post || 'wp_block' !== $comp_post->post_type ) {
+				return new WP_Error( 'invalid_component', 'Component not found', array( 'status' => 404 ) );
+			}
+		}
+
 		$effective_id = $component_id ?: $post_id;
 		$post         = get_post( $effective_id );
 		if ( ! $post ) {
@@ -241,6 +257,12 @@ class AiTranslationHandler {
 
 		if ( ! $this->settings->is_configured() ) {
 			return new \WP_Error( 'not_configured', 'AI provider not configured', array( 'status' => 400 ) );
+		}
+
+		// Validate target_lang against active WPML languages.
+		$active = apply_filters( 'wpml_active_languages', null, 'skip_missing=0' );
+		if ( ! is_array( $active ) || ! isset( $active[ $target_lang ] ) ) {
+			return new \WP_Error( 'invalid_language', 'Unknown target language', array( 'status' => 400 ) );
 		}
 
 		// Resolve loop name from the etch_loops option.

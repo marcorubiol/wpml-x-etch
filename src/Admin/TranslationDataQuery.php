@@ -297,7 +297,13 @@ class TranslationDataQuery {
 			$translated_counts[ $row->loop_name ][ $row->lang_code ] = (int) $row->translated;
 		}
 
-		// Build result: compare translated vs total per loop per language.
+		// Build result: three states per loop per language. WPML doesn't have
+		// a native "partial" status for string packages (loops aren't jobs and
+		// don't go through ATE's lifecycle), so we map the partial case to
+		// `needs_update` — semantically equivalent ("translation exists but
+		// doesn't fully cover the current source") and reuses the existing
+		// status enum, label, and badge color. `waiting` and `in_progress`
+		// don't apply to loops at all because there's no per-loop job.
 		$result = array();
 		foreach ( $loop_names as $loop_name ) {
 			$total = $totals[ $loop_name ] ?? 0;
@@ -306,7 +312,14 @@ class TranslationDataQuery {
 			}
 			foreach ( $lang_codes as $lang_code ) {
 				$translated = $translated_counts[ $loop_name ][ $lang_code ] ?? 0;
-				$result[ $loop_name ][ $lang_code ] = ( $translated >= $total ) ? 'translated' : 'not_translated';
+				if ( 0 === $translated ) {
+					$status = 'not_translated';
+				} elseif ( $translated >= $total ) {
+					$status = 'translated';
+				} else {
+					$status = 'needs_update';
+				}
+				$result[ $loop_name ][ $lang_code ] = $status;
 			}
 		}
 

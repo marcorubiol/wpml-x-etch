@@ -12,7 +12,7 @@ const ICON_LANGUAGES =
   '<svg class="wxe-section-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>';
 const ICON_SLIDERS =
   '<svg class="wxe-section-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>';
-import { escapeHtml, msg, checkLock } from './utils.js';
+import { escapeHtml, safeUrl, msg, checkLock } from './utils.js';
 
 const ICON_LOCK_MINI = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
 
@@ -58,7 +58,7 @@ function buildPanelHtml() {
     const [, sourceLangData] = sourceLang;
     metaParts.push(
       `<span class="wxe-post-meta-source" interestfor="wxe-source-lang-tooltip">` +
-      `<img src="${escapeHtml(sourceLangData.flag_url)}" alt="" width="16" height="11" class="wxe-flag">` +
+      `<img src="${escapeHtml(safeUrl(sourceLangData.flag_url))}" alt="" width="16" height="11" class="wxe-flag">` +
       `<span class="wxe-post-meta-source-name">${escapeHtml(sourceLangData.native_name)}</span>` +
       `</span>`
     );

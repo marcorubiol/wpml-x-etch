@@ -99,6 +99,39 @@ class BuilderPanel implements SubscriberInterface {
 	}
 
 	/**
+	 * Reject target_lang values that don't match an active WPML language.
+	 * Without this guard, a caller with the `translate` cap could pass an
+	 * arbitrary code and pollute icl_strings / icl_translations rows under
+	 * a language WPML doesn't actually serve.
+	 */
+	private function validate_target_lang( string $target_lang ): ?WP_Error {
+		if ( '' === $target_lang ) {
+			return new WP_Error( 'missing_lang', 'Target language is required', array( 'status' => 400 ) );
+		}
+		$active = apply_filters( 'wpml_active_languages', null, 'skip_missing=0' );
+		if ( ! is_array( $active ) || ! isset( $active[ $target_lang ] ) ) {
+			return new WP_Error( 'invalid_language', 'Unknown target language', array( 'status' => 400 ) );
+		}
+		return null;
+	}
+
+	/**
+	 * Reject component_id values that don't point to a real wp_block post.
+	 * `translate` callers could otherwise create translation jobs for
+	 * arbitrary post IDs by passing them as component_id.
+	 */
+	private function validate_component_id( int $component_id ): ?WP_Error {
+		if ( 0 === $component_id ) {
+			return null;
+		}
+		$post = get_post( $component_id );
+		if ( ! $post || 'wp_block' !== $post->post_type ) {
+			return new WP_Error( 'invalid_component', 'Component not found', array( 'status' => 404 ) );
+		}
+		return null;
+	}
+
+	/**
 	 * Redirect translated posts to the original when opening Etch.
 	 *
 	 * Prevents users from editing a translation post directly in Etch,
@@ -286,6 +319,19 @@ class BuilderPanel implements SubscriberInterface {
 		// Search is available for supporter and pro, locked for free.
 		$search_locked = ( 'free' === $locking_mode );
 
+		// Mirror the REST permission split on the page-load payload. Without
+		// this, locking /license/* and /ai/* to manage_options is only half a
+		// fix: license PII (email, key_masked) and AI capability flags would
+		// still be inlined into wxeBridge for any user with `translate`.
+		$can_admin            = current_user_can( 'manage_options' );
+		$license_status_full  = $this->license_manager->get_status();
+		$license_status_safe  = $can_admin
+			? $license_status_full
+			: array(
+				'tier'     => $license_status_full['tier'] ?? null,
+				'is_valid' => (bool) ( $license_status_full['is_valid'] ?? false ),
+			);
+
 		wp_localize_script( 'wxe-panel', 'wxeBridge', array(
 			'languages'        => $state['lang_data'],
 			'components'       => $state['components'],
@@ -307,10 +353,11 @@ class BuilderPanel implements SubscriberInterface {
 			'restUrl'          => rest_url( 'wpml-x-etch/v1/' ),
 			'restNonce'        => wp_create_nonce( 'wp_rest' ),
 			'wpmlSettingsUrl'  => admin_url( 'admin.php?page=tm%2Fmenu%2Fsettings#ml-content-setup-sec-7' ),
-			'aiConfigured'     => $this->ai_settings->is_configured(),
-			'aiVerified'       => $this->ai_settings->is_verified(),
-			'aiAccess'         => ! empty( $this->config->get_pill_access()['ai'] ),
-			'licenseStatus'    => $this->license_manager->get_status(),
+			'aiConfigured'     => $can_admin && $this->ai_settings->is_configured(),
+			'aiVerified'       => $can_admin && $this->ai_settings->is_verified(),
+			'aiAccess'         => $can_admin && ! empty( $this->config->get_pill_access()['ai'] ),
+			'licenseStatus'    => $license_status_safe,
+			'canManageLicense' => $can_admin,
 			'messages'         => $this->get_localized_messages(),
 		) );
 	}
@@ -643,6 +690,12 @@ class BuilderPanel implements SubscriberInterface {
 			return new WP_Error( 'missing_params', 'Missing parameters', array( 'status' => 400 ) );
 		}
 		$error = $this->validate_post( $post_id );
+		if ( $error ) { return $error; }
+
+		$error = $this->validate_target_lang( $target_lang );
+		if ( $error ) { return $error; }
+
+		$error = $this->validate_component_id( $component_id );
 		if ( $error ) { return $error; }
 
 		// If component_id is provided, translate the component instead of the page.

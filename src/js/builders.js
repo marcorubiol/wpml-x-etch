@@ -1,5 +1,5 @@
 import { state, ICON_ARROW, ICON_SPARKLE } from "./state.js";
-import { escapeHtml, msg, isPostTranslatable } from "./utils.js";
+import { escapeHtml, safeUrl, msg, isPostTranslatable } from "./utils.js";
 
 const EXTERNAL_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 import { filterItems } from "./filters.js";
@@ -49,7 +49,7 @@ function translateAllBtn(postId, componentId) {
 export function buildSectionHeader(title, subtitle = '', subtitleUrl = '') {
   let html = `<div class="wxe-section-header"><h3>${escapeHtml(title)}</h3>`;
   if (subtitle && subtitleUrl) {
-    html += `<a href="${escapeHtml(subtitleUrl)}" target="_blank" class="wxe-section-subtitle wxe-section-subtitle--link">${escapeHtml(subtitle)} ${EXTERNAL_ICON}</a>`;
+    html += `<a href="${escapeHtml(safeUrl(subtitleUrl))}" target="_blank" rel="noopener noreferrer" class="wxe-section-subtitle wxe-section-subtitle--link">${escapeHtml(subtitle)} ${EXTERNAL_ICON}</a>`;
   } else if (subtitle) {
     html += `<p class="wxe-section-subtitle">${escapeHtml(subtitle)}</p>`;
   }
@@ -86,13 +86,13 @@ export function buildPageStatus() {
   if (otherLangs.length === 0) return "";
 
   const currentId = window.wxeBridge.currentPostId;
-  let html = `<div class="wxe-section">${buildSectionHeader(postTypeLabel || msg().pageFallback || "Page")}<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(window.wxeBridge.etchUrl || '#')}">${escapeHtml(postTitle)}</a>${translateAllBtn(currentId, 0)}</div>`;
+  let html = `<div class="wxe-section">${buildSectionHeader(postTypeLabel || msg().pageFallback || "Page")}<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(safeUrl(window.wxeBridge.etchUrl || '#'))}">${escapeHtml(postTitle)}</a>${translateAllBtn(currentId, 0)}</div>`;
 
   for (const [code, lang] of otherLangs) {
     html += `
       <div class="wxe-component-lang-row" data-lang-code="${code}" data-status="${lang.status}">
         <div class="wxe-component-lang-info">
-          <img src="${escapeHtml(lang.flag_url)}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
+          <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
           <span class="wxe-component-lang-name">${escapeHtml(lang.native_name)}</span>
         </div>
         <div class="wxe-row-actions">${sparkleBtn()}<button type="button" class="wxe-ate-btn" data-action="open-ate" data-tooltip="Translate in WPML">${ICON_ARROW}</button></div>
@@ -134,13 +134,13 @@ export function buildComponentsList() {
 
     if (componentLangs.length === 0) continue;
 
-    cardsHtml += `<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(component.etch_url || '#')}">${escapeHtml(component.title)}</a>${translateAllBtn(component.id, component.id)}</div>`;
+    cardsHtml += `<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(safeUrl(component.etch_url || '#'))}">${escapeHtml(component.title)}</a>${translateAllBtn(component.id, component.id)}</div>`;
 
     for (const [code, lang] of componentLangs) {
       cardsHtml += `
         <div class="wxe-component-lang-row" data-component-id="${component.id}" data-lang-code="${code}" data-status="${lang.status}">
           <div class="wxe-component-lang-info">
-            <img src="${escapeHtml(lang.flag_url)}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
+            <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
             <span class="wxe-component-lang-name">${escapeHtml(lang.native_name)}</span>
           </div>
           <div class="wxe-row-actions">${sparkleBtn(lang.native_name)}<button type="button" class="wxe-ate-btn" data-action="open-ate" data-tooltip="Translate in WPML">${ICON_ARROW}</button></div>
@@ -180,12 +180,12 @@ export function buildItemCards(items, postTypeHint) {
     if (!langRows.length) continue;
 
     const isComp = postTypeHint === "wp_block" || (!postTypeHint && item._isComponent);
-    html += `<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(item.etch_url || '#')}">${escapeHtml(item.title)}</a>${translateAllBtn(item.id, isComp ? item.id : 0)}</div>`;
+    html += `<div class="wxe-component-group"><div class="wxe-component-header-row"><a class="wxe-component-header" href="${escapeHtml(safeUrl(item.etch_url || '#'))}">${escapeHtml(item.title)}</a>${translateAllBtn(item.id, isComp ? item.id : 0)}</div>`;
     for (const [code, lang] of langRows) {
       html += `
         <div class="wxe-item-lang-row" data-item-id="${item.id}" data-lang-code="${code}" data-post-type="${postTypeHint || ""}" data-status="${lang.status}">
           <div class="wxe-component-lang-info">
-            <img src="${escapeHtml(lang.flag_url)}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
+            <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
             <span class="wxe-component-lang-name">${escapeHtml(lang.native_name)}</span>
           </div>
           <div class="wxe-row-actions">${sparkleBtn()}<button type="button" class="wxe-ate-btn" data-action="open-ate" data-tooltip="Translate in WPML">${ICON_ARROW}</button></div>
@@ -289,7 +289,7 @@ export function buildNotTranslatableState(label) {
     window.wxeBridge.wpmlSettingsUrl ||
     "/wp-admin/admin.php?page=tm%2Fmenu%2Fsettings#ml-content-setup-sec-7";
   const externalIcon = EXTERNAL_ICON;
-  return `<div class="wxe-section">${buildSectionHeader(label)}<div class="wxe-component-group"><div class="wxe-not-translatable-info"><p>${escapeHtml(m.notTranslatableInfo || "This content type is not enabled for translation in WPML.")}</p><a href="${escapeHtml(settingsUrl)}" target="_blank" class="wxe-not-translatable-link"><span>${escapeHtml(m.enableTranslation || "Enable in WPML Settings")}</span> ${externalIcon}</a></div></div></div>`;
+  return `<div class="wxe-section">${buildSectionHeader(label)}<div class="wxe-component-group"><div class="wxe-not-translatable-info"><p>${escapeHtml(m.notTranslatableInfo || "This content type is not enabled for translation in WPML.")}</p><a href="${escapeHtml(safeUrl(settingsUrl))}" target="_blank" rel="noopener noreferrer" class="wxe-not-translatable-link"><span>${escapeHtml(m.enableTranslation || "Enable in WPML Settings")}</span> ${externalIcon}</a></div></div></div>`;
 }
 
 export function buildSkeleton() {
@@ -339,14 +339,14 @@ function buildLoopLangCards(loops) {
 
     if (!langRows.length) continue;
 
-    cardsHtml += `<div class="wxe-component-group"><div class="wxe-component-header-row"><div class="wxe-loop-header-info"><span class="wxe-component-header">${escapeHtml(loop.name)}</span><a href="${escapeHtml(loop.url)}" target="_blank" class="wxe-loop-st-link">Open in String Translation ${EXTERNAL_ICON}</a></div>${loopTranslateAllBtn(loop.id)}</div>`;
+    cardsHtml += `<div class="wxe-component-group"><div class="wxe-component-header-row"><div class="wxe-loop-header-info"><span class="wxe-component-header">${escapeHtml(loop.name)}</span><a href="${escapeHtml(safeUrl(loop.url))}" target="_blank" rel="noopener noreferrer" class="wxe-loop-st-link">Open in String Translation ${EXTERNAL_ICON}</a></div>${loopTranslateAllBtn(loop.id)}</div>`;
 
     for (const [code, lang] of langRows) {
       const status = loopStatus[code] || "not_translated";
       cardsHtml += `
         <div class="wxe-component-lang-row wxe-loop-lang-row" data-loop-id="${escapeHtml(loop.id)}" data-lang-code="${code}" data-status="${status}" data-loop-name="${escapeHtml(loop.name)}">
           <div class="wxe-component-lang-info">
-            <img src="${escapeHtml(lang.flag_url)}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
+            <img src="${escapeHtml(safeUrl(lang.flag_url))}" alt="${escapeHtml(lang.native_name)}" width="16" height="11" class="wxe-flag">
             <span class="wxe-component-lang-name">${escapeHtml(lang.native_name)}</span>
           </div>
           <div class="wxe-row-actions">${loopSparkleBtn(loop.id, code, lang.native_name)}</div>
