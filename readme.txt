@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,10 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.2 =
+* UX: the "Missing WPML dependencies" admin notice is now self-service. When WPML is active but its database is incomplete (e.g. the `icl_string_packages` table was never created because String Translation's install/migration didn't finish), the notice explains the fix and links straight to WPML → Support → Troubleshooting ("Set up WPML tables again"). When WPML core itself is absent, it tells the user to install WPML + String Translation. The plugin never creates WPML's own tables — that repair belongs to WPML.
+* Fix: the dependency health-check cache (12h transient) is now flushed on plugin activation. Previously, reactivating WPML x Etch after fixing the underlying WPML problem did nothing — the stale "missing dependency" notice lingered for up to 12 hours. A reactivation now forces a fresh check on the next admin load.
 
 = 1.2.1 =
 * Performance: `register_loop_strings` now skips the full walk + DB cleanup when `etch_loops` hasn't changed since the last registration. Hash of the option payload is stored in a transient (`zs_wxe_loops_registry_hash`) and invalidated on the `update_option_etch_loops` / `add_option_etch_loops` hooks. Filter `zs_wxe_force_loop_registration` provides an escape hatch.

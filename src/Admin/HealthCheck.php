@@ -43,6 +43,16 @@ class HealthCheck {
 	}
 
 	/**
+	 * Clear the cached health-check result so the next admin load re-runs it.
+	 *
+	 * Called on plugin activation so a reactivation forces a fresh check
+	 * instead of showing a stale failure for up to CACHE_TTL.
+	 */
+	public static function clear_cache(): void {
+		delete_transient( self::CACHE_KEY );
+	}
+
+	/**
 	 * Run the check if the cached result has expired.
 	 */
 	public function maybe_run_check(): void {
@@ -69,9 +79,47 @@ class HealthCheck {
 		}, $failures ) );
 
 		printf(
-			'<div class="notice notice-error is-dismissible"><p><strong>WPML x Etch:</strong> %s %s</p></div>',
+			'<div class="notice notice-error is-dismissible"><p><strong>WPML x Etch:</strong> %s %s</p>%s</div>',
 			esc_html__( 'Missing WPML dependencies:', 'wpml-x-etch' ),
-			$list // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+			$list, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+			$this->render_guidance() // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in method.
+		);
+	}
+
+	/**
+	 * Build the "how to fix it yourself" guidance shown under the notice.
+	 *
+	 * These tables/classes belong to WPML, so the repair must happen on the
+	 * WPML side. We point the user at the right place instead of touching
+	 * WPML's schema ourselves.
+	 *
+	 * @return string HTML (already escaped).
+	 */
+	private function render_guidance(): string {
+		// WPML core present but something (e.g. a String Translation table)
+		// is missing: the install/migration is incomplete and can be repaired
+		// from WPML's own troubleshooting tools — no support ticket needed.
+		if ( defined( 'ICL_SITEPRESS_VERSION' ) ) {
+			$url  = admin_url( 'admin.php?page=sitepress-multilingual-cms/menu/troubleshooting.php' );
+			$steps = sprintf(
+				/* translators: 1: WPML String Translation, 2: button label on WPML's troubleshooting page. */
+				esc_html__( 'WPML is active but its database is incomplete. To fix it yourself: deactivate and reactivate %1$s, or open WPML → Support → Troubleshooting and click “%2$s”.', 'wpml-x-etch' ),
+				'<strong>WPML String Translation</strong>',
+				esc_html__( 'Set up WPML tables again', 'wpml-x-etch' )
+			);
+
+			return sprintf(
+				'<p>%s</p><p><a class="button button-secondary" href="%s">%s</a></p>',
+				$steps, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts above.
+				esc_url( $url ),
+				esc_html__( 'Open WPML Troubleshooting', 'wpml-x-etch' )
+			);
+		}
+
+		// WPML core itself is missing: nothing to repair, it must be installed.
+		return sprintf(
+			'<p>%s</p>',
+			esc_html__( 'Install and activate WPML Multilingual CMS together with the String Translation add-on, then this notice will clear automatically.', 'wpml-x-etch' )
 		);
 	}
 

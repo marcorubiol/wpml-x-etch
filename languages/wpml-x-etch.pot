@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPML X Etch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-26 00:00+0000\n"
+"POT-Creation-Date: 2026-06-15 00:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -168,4 +168,26 @@ msgstr ""
 #. Pill labels.
 #: src/Admin/BuilderPanel.php
 msgid "Templates"
+msgstr ""
+
+#. Dependency health-check admin notice.
+#: src/Admin/HealthCheck.php
+msgid "Missing WPML dependencies:"
+msgstr ""
+
+#: src/Admin/HealthCheck.php
+#. translators: 1: WPML String Translation, 2: button label on WPML's troubleshooting page.
+msgid "WPML is active but its database is incomplete. To fix it yourself: deactivate and reactivate %1$s, or open WPML → Support → Troubleshooting and click “%2$s”."
+msgstr ""
+
+#: src/Admin/HealthCheck.php
+msgid "Set up WPML tables again"
+msgstr ""
+
+#: src/Admin/HealthCheck.php
+msgid "Open WPML Troubleshooting"
+msgstr ""
+
+#: src/Admin/HealthCheck.php
+msgid "Install and activate WPML Multilingual CMS together with the String Translation add-on, then this notice will clear automatically."
 msgstr ""

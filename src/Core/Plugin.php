@@ -279,6 +279,10 @@ class Plugin
         $this->register_post_types();
         $this->maybe_register_ui_strings(true);
         $this->backfill_component_refs();
+
+        // Force a fresh dependency check on next admin load so a stale
+        // "missing dependency" notice clears once the user has fixed it.
+        HealthCheck::clear_cache();
     }
 
     /**
