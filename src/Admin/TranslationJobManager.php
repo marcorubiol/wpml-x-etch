@@ -148,31 +148,31 @@ class TranslationJobManager {
 
 		$ate_url = apply_filters( 'wpml_tm_ate_jobs_editor_url', '', $job_id, $return_url );
 
+		// WPML's own handler (WPML_TM_ATE_Jobs_Actions::get_editor_url) only
+		// returns a URL when `is_current_user_activated() || is_admin()`. Our panel
+		// runs over REST — is_admin() is false — and translators/managers are
+		// usually not flagged `ate_activated` (that user meta is only set when they
+		// confirm an ATE invite email; admins are covered by is_admin() in
+		// wp-admin). So the filter returns '' even though the ATE job and its
+		// editor_job_id are fully persisted. Build the URL ourselves, bypassing
+		// only the gate — not the URL generation.
+		if ( ! $ate_url || is_wp_error( $ate_url ) ) {
+			$ate_url = $this->build_ate_editor_url( $job_id, $return_url );
+		}
+
 		if ( $ate_url && ! is_wp_error( $ate_url ) ) {
 			return array( 'url' => $ate_url, 'job_id' => $job_id );
 		}
 
-		// If the job was just created/updated, ATE may still be processing.
-		// Signal the client to retry instead of falling back to the classic editor.
-		if ( $needs_update ) {
-			Logger::info( 'ATE URL not ready yet, signalling client to retry', array(
-				'post_id' => $post_id,
-				'job_id'  => $job_id,
-			) );
-			return array( 'status' => 'pending', 'job_id' => $job_id );
-		}
-
-		// Fallback to classic translation editor if ATE is not available
-		// (only for jobs that were NOT just created — i.e. a persistent ATE issue).
-		$classic_url = admin_url( 'admin.php?page=wpml-translation-management/menu/translations/translate-job.php&job_id=' . $job_id );
-
-		Logger::warning( 'ATE URL not available, using classic editor', array(
-			'post_id'     => $post_id,
-			'job_id'      => $job_id,
-			'classic_url' => $classic_url,
+		// No editor_job_id yet: the ATE counterpart has not been created (ATE is
+		// still processing, or job creation failed). Signal the client to retry
+		// (it polls with backoff) instead of dropping the user into the classic
+		// editor, which 403s on the modern WPML default where it is disabled.
+		Logger::info( 'ATE URL not ready yet, signalling client to retry', array(
+			'post_id' => $post_id,
+			'job_id'  => $job_id,
 		) );
-
-		return array( 'url' => $classic_url, 'job_id' => $job_id );
+		return array( 'status' => 'pending', 'job_id' => $job_id );
 	}
 
 	/**
@@ -943,23 +943,56 @@ class TranslationJobManager {
 			$ate_jobs   = new \WPML_TM_ATE_Jobs( wpml_tm_get_ate_job_records() );
 			$clone_jobs = new \WPML\TM\Menu\TranslationQueue\CloneJobs( $ate_jobs, $ate_api );
 
+			// Synchronously creates the ATE job and persists editor_job_id into
+			// icl_translate_job (verified in production: the id IS stored). The
+			// blocker for the editor URL is WPML's activation gate, not
+			// persistence — see build_ate_editor_url().
 			$clone_jobs->cloneWPMLJob( $job_id );
-
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-			$updated_row = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT editor_job_id FROM {$wpdb->prefix}icl_translate_job WHERE job_id = %d",
-					$job_id
-				)
-			);
-
-			// NOTE: ATE string sync was removed intentionally. The previous
-			// usleep()-based timing hack was unreliable. If ATE opens before
-			// strings are ready (empty editor), investigate ATE's API for a
-			// status/ready endpoint to implement proper polling instead.
 		} catch ( \Throwable $e ) {
 			Logger::warning( 'ATE job creation failed', array( 'error' => $e->getMessage() ) );
 		}
+	}
+
+	/**
+	 * Build the ATE editor URL directly, bypassing WPML's activation/context gate.
+	 *
+	 * The handler behind the `wpml_tm_ate_jobs_editor_url` filter
+	 * (WPML_TM_ATE_Jobs_Actions::get_editor_url) only returns a URL when
+	 * `is_current_user_activated() || is_admin()`. Our panel calls it over REST,
+	 * where `is_admin()` is false, and translators/managers are commonly NOT
+	 * flagged `ate_activated` — that user meta is only set when a user confirms an
+	 * ATE invitation email, and admins never need it because `is_admin()` covers
+	 * them in wp-admin. Result: the filter returns '' even though the ATE job and
+	 * its editor_job_id are fully persisted (confirmed in production).
+	 *
+	 * The gate only decides *whether* to hand back the URL — it does not change
+	 * it. The URL built here is identical to the one a user gets from wp-admin
+	 * (same `ate_api->get_editor_url` call, same signed token), so ATE accepts it
+	 * the same way. Access control is not weakened: the /translate-url REST route
+	 * already gates on the caller's translation capability, making WPML's UI-level
+	 * gate redundant in this path.
+	 *
+	 * @return string The ATE editor URL, or '' if the job has no ATE counterpart yet.
+	 */
+	private function build_ate_editor_url( int $job_id, string $return_url ): string {
+		if (
+			! function_exists( 'wpml_tm_ams_ate_factories' ) ||
+			! function_exists( 'wpml_tm_get_ate_job_records' ) ||
+			! class_exists( 'WPML_TM_ATE_Jobs' )
+		) {
+			return '';
+		}
+
+		$ate_jobs   = new \WPML_TM_ATE_Jobs( wpml_tm_get_ate_job_records() );
+		$ate_job_id = $ate_jobs->get_ate_job_id( $job_id );
+
+		if ( ! $ate_job_id ) {
+			return '';
+		}
+
+		$ate_url = wpml_tm_ams_ate_factories()->get_ate_api()->get_editor_url( $ate_job_id, $return_url );
+
+		return ( is_wp_error( $ate_url ) || ! is_string( $ate_url ) ) ? '' : $ate_url;
 	}
 
 }

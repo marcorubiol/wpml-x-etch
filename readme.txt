@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.2
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,9 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.4 =
+* Fix: translating an Etch component (wp_block) failed with "ATE didn't respond in time" and never opened the editor. Root cause (confirmed in production): the panel resolves the ATE editor URL over REST, but WPML's `wpml_tm_ate_jobs_editor_url` handler (`WPML_TM_ATE_Jobs_Actions::get_editor_url`) only returns a URL when `is_current_user_activated() || is_admin()`. Over REST `is_admin()` is false, and translators/managers are typically not flagged `ate_activated` (that user meta is only set when a user confirms an ATE invitation email; admins never need it in wp-admin). So the filter returned '' even though the ATE job and its `editor_job_id` were correctly created and persisted — the blocker was the UI gate, not job creation. `TranslationJobManager::resolve_translate_url()` now falls back to `build_ate_editor_url()`, which generates the editor URL directly from the persisted `editor_job_id` via the same `ate_api->get_editor_url()` call WPML makes internally, bypassing only the gate. The URL is byte-for-byte identical to the one a user gets from wp-admin (same signed token); access remains gated by the /translate-url REST capability check. This also removes the fallback to the classic editor, which 403s on modern WPML where it is disabled.
 
 = 1.2.2 =
 * UX: the "Missing WPML dependencies" admin notice is now self-service. When WPML is active but its database is incomplete (e.g. the `icl_string_packages` table was never created because String Translation's install/migration didn't finish), the notice explains the fix and links straight to WPML → Support → Troubleshooting ("Set up WPML tables again"). When WPML core itself is absent, it tells the user to install WPML + String Translation. The plugin never creates WPML's own tables — that repair belongs to WPML.
