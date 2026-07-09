@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,11 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.6 =
+* Reliability: the GitHub-releases update check no longer fails silently. The REST API lookup (subject to GitHub's 60 req/h unauthenticated rate limit per IP — easily exhausted on shared hosting) now falls back to the quota-free release-page redirect (`/releases/latest` → 302 → tag), verifying the `wpml-x-etch.zip` asset exists via HEAD before offering the update.
+* UX: after a manual "Check for updates", the Plugins screen shows the outcome — success ("you are on the latest version"), update available, or the exact failure reason (including the rate-limit reset time when that is the cause).
+* New: optional `ZS_WXE_GITHUB_TOKEN` constant (wp-config.php) authenticates GitHub API requests, raising the rate limit from 60 to 5000 req/h.
 
 = 1.2.5 =
 * Fix: Etch 1.6.2 compatibility — the Translations toolbar button rendered the WPML logo in full color and lost its status dot. Etch 1.6.2 no longer reflects the registered button id in the DOM (bits-ui generates its own ids), no longer emits `iconify--*` classes, and renders iconify icon names as full-color SVGs fetched from the iconify API — so every selector we used to find our button matched nothing, and the colored brand icon replaced the monochrome one. The button icon is now a monochrome globe glyph passed as an iconify icon-data object (`{body, width, height}` — raw `<svg>` strings render empty in 1.6.2), which inherits the toolbar color via `currentColor` and carries a `data-wxe-icon` marker inside the SVG body. That marker replaces the old id/class-based selectors used to locate the button for the status dot and panel positioning. Icon-data objects are supported by @iconify/svelte since v1, so this also works on Etch 1.5.x.

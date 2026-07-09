@@ -18,11 +18,15 @@ class UpdateChecker implements SubscriberInterface {
 	private const PLUGIN_URL       = 'https://wpml-x-etch.zerosense.studio/';
 	private const CACHE_KEY        = 'zs_wxe_github_release';
 	private const CACHE_KEY_README = 'zs_wxe_github_readme';
+	private const CACHE_KEY_ERROR  = 'zs_wxe_update_check_error';
 	private const CACHE_TTL        = 12 * HOUR_IN_SECONDS;
 
 	private string $plugin_file;
 	private string $plugin_slug;
 	private string $plugin_basename;
+
+	/** Human-readable reason the last release lookup failed (for the admin notice). */
+	private string $last_error = '';
 
 	public function __construct( string $plugin_file ) {
 		$this->plugin_file     = $plugin_file;
@@ -36,6 +40,7 @@ class UpdateChecker implements SubscriberInterface {
 			array( 'plugins_api', 'plugin_info', 10, 3 ),
 			array( 'plugin_action_links_wpml-x-etch/wpml-x-etch.php', 'add_check_update_link' ),
 			array( 'admin_init', 'handle_check_update' ),
+			array( 'admin_notices', 'show_check_update_notice' ),
 			array( 'upgrader_source_selection', 'fix_source_dir', 10, 4 ),
 		);
 	}
@@ -143,6 +148,7 @@ class UpdateChecker implements SubscriberInterface {
 
 		delete_transient( self::CACHE_KEY );
 		delete_transient( self::CACHE_KEY_README );
+		delete_transient( self::CACHE_KEY_ERROR );
 		delete_site_transient( 'update_plugins' );
 		wp_clean_plugins_cache( true );
 
@@ -261,7 +267,13 @@ class UpdateChecker implements SubscriberInterface {
 	/**
 	 * Fetch the latest release from GitHub, with transient caching.
 	 *
-	 * @return array{tag_name: string, zip_url: string, body: string}|null
+	 * Tries the REST API first (rich data, but subject to the 60 req/h
+	 * unauthenticated rate limit per IP — easily exhausted on shared
+	 * hosting). Falls back to the release-page redirect, which has no API
+	 * quota. Failures of both paths are recorded in a transient so the
+	 * Plugins-screen notice can say WHY instead of failing silently.
+	 *
+	 * @return array{tag_name: string, zip_url: string, readme_url: string, body: string}|null
 	 */
 	private function get_latest_release(): ?array {
 		$cached = get_transient( self::CACHE_KEY );
@@ -269,21 +281,59 @@ class UpdateChecker implements SubscriberInterface {
 			return $cached;
 		}
 
+		$this->last_error = '';
+
+		$result = $this->fetch_release_from_api();
+		if ( ! $result ) {
+			$result = $this->fetch_release_from_redirect();
+		}
+
+		if ( ! $result ) {
+			set_transient( self::CACHE_KEY_ERROR, $this->last_error ?: 'Unknown error.', 15 * MINUTE_IN_SECONDS );
+			return null;
+		}
+
+		delete_transient( self::CACHE_KEY_ERROR );
+		set_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
+
+		return $result;
+	}
+
+	/**
+	 * Primary lookup: GitHub REST API (/releases/latest).
+	 *
+	 * Sends an Authorization header when the site defines
+	 * ZS_WXE_GITHUB_TOKEN (raises the rate limit from 60 to 5000 req/h).
+	 */
+	private function fetch_release_from_api(): ?array {
 		$url      = 'https://api.github.com/repos/' . self::GITHUB_REPO . '/releases/latest';
+		$headers  = array(
+			'Accept'     => 'application/vnd.github.v3+json',
+			'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
+		);
+		if ( defined( 'ZS_WXE_GITHUB_TOKEN' ) && ZS_WXE_GITHUB_TOKEN ) {
+			$headers['Authorization'] = 'Bearer ' . ZS_WXE_GITHUB_TOKEN;
+		}
+
 		$response = wp_remote_get( $url, array(
-			'headers' => array(
-				'Accept'     => 'application/vnd.github.v3+json',
-				'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
-			),
+			'headers' => $headers,
 			'timeout' => 10,
 		) );
 
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		if ( is_wp_error( $response ) ) {
+			$this->last_error = 'GitHub API unreachable: ' . $response->get_error_message();
+			return null;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $code ) {
+			$this->last_error = $this->describe_api_failure( $code, $response );
 			return null;
 		}
 
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( empty( $data['tag_name'] ) ) {
+			$this->last_error = 'GitHub API returned no release tag.';
 			return null;
 		}
 
@@ -308,18 +358,124 @@ class UpdateChecker implements SubscriberInterface {
 
 		// No zip asset yet (workflow may still be building). Don't cache.
 		if ( empty( $zip_url ) ) {
+			$this->last_error = 'Release ' . $data['tag_name'] . ' has no wpml-x-etch.zip asset yet (build may still be running).';
 			return null;
 		}
 
-		$result = array(
+		return array(
 			'tag_name'   => $data['tag_name'],
 			'zip_url'    => $zip_url,
 			'readme_url' => $readme_url,
 			'body'       => $data['body'] ?? '',
 		);
+	}
 
-		set_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
+	/**
+	 * Quota-free fallback: github.com/<repo>/releases/latest answers with a
+	 * 302 to /releases/tag/<tag>, and release assets live at deterministic
+	 * download URLs (the workflow always uploads wpml-x-etch.zip + readme.txt).
+	 * A HEAD on the zip confirms the asset exists before offering the update.
+	 */
+	private function fetch_release_from_redirect(): ?array {
+		$headers = array(
+			'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
+		);
 
-		return $result;
+		$response = wp_remote_get( 'https://github.com/' . self::GITHUB_REPO . '/releases/latest', array(
+			'headers'     => $headers,
+			'timeout'     => 10,
+			'redirection' => 0,
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			$this->last_error .= ' Fallback (release page) unreachable: ' . $response->get_error_message();
+			return null;
+		}
+
+		$location = (string) wp_remote_retrieve_header( $response, 'location' );
+		if ( ! preg_match( '#/releases/tag/([^/?\#]+)#', $location, $m ) ) {
+			$this->last_error .= ' Fallback (release page) returned no tag redirect (HTTP ' . (int) wp_remote_retrieve_response_code( $response ) . ').';
+			return null;
+		}
+
+		$tag        = rawurldecode( $m[1] );
+		$base       = 'https://github.com/' . self::GITHUB_REPO . '/releases/download/' . rawurlencode( $tag ) . '/';
+		$zip_url    = $base . 'wpml-x-etch.zip';
+		$readme_url = $base . 'readme.txt';
+
+		// Existing assets answer 302 (redirect to storage); missing ones 404.
+		$head = wp_remote_head( $zip_url, array(
+			'headers'     => $headers,
+			'timeout'     => 10,
+			'redirection' => 0,
+		) );
+		$head_code = is_wp_error( $head ) ? 0 : (int) wp_remote_retrieve_response_code( $head );
+		if ( $head_code < 200 || $head_code > 399 ) {
+			$this->last_error .= ' Release ' . $tag . ' found via fallback but wpml-x-etch.zip is not downloadable (HTTP ' . $head_code . ').';
+			return null;
+		}
+
+		return array(
+			'tag_name'   => $tag,
+			'zip_url'    => $zip_url,
+			'readme_url' => $readme_url,
+			'body'       => '',
+		);
+	}
+
+	/**
+	 * Turn a non-200 API response into an actionable message, including
+	 * the rate-limit reset time when that is the cause.
+	 *
+	 * @param int   $code     HTTP status code.
+	 * @param array $response Full wp_remote_get() response.
+	 */
+	private function describe_api_failure( int $code, $response ): string {
+		$remaining = wp_remote_retrieve_header( $response, 'x-ratelimit-remaining' );
+		$reset     = wp_remote_retrieve_header( $response, 'x-ratelimit-reset' );
+
+		if ( in_array( $code, array( 403, 429 ), true ) && '0' === (string) $remaining ) {
+			$msg = 'GitHub API rate limit exceeded for this server\'s IP (60 unauthenticated requests/hour, shared on shared hosting).';
+			if ( $reset ) {
+				$msg .= ' Resets at ' . wp_date( get_option( 'time_format' ), (int) $reset ) . '.';
+			}
+			$msg .= ' Define ZS_WXE_GITHUB_TOKEN in wp-config.php to raise the limit.';
+			return $msg;
+		}
+
+		return 'GitHub API returned HTTP ' . $code . '.';
+	}
+
+	/**
+	 * After a manual "Check for updates", report the outcome on the Plugins
+	 * screen instead of failing silently.
+	 */
+	public function show_check_update_notice(): void {
+		if ( empty( $_GET['zs_wxe_updated_check'] ) || ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+
+		$error = get_transient( self::CACHE_KEY_ERROR );
+		if ( is_string( $error ) && '' !== $error ) {
+			printf(
+				'<div class="notice notice-warning is-dismissible"><p><strong>WPML x Etch:</strong> %s %s</p></div>',
+				esc_html__( 'update check failed —', 'wpml-x-etch' ),
+				esc_html( $error )
+			);
+			return;
+		}
+
+		$release = get_transient( self::CACHE_KEY );
+		if ( is_array( $release ) && ! empty( $release['tag_name'] ) ) {
+			$remote_version = ltrim( $release['tag_name'], 'vV' );
+			$up_to_date     = ! version_compare( $remote_version, ZS_WXE_VERSION, '>' );
+			printf(
+				'<div class="notice notice-%s is-dismissible"><p><strong>WPML x Etch:</strong> %s</p></div>',
+				$up_to_date ? 'success' : 'info',
+				$up_to_date
+					? esc_html( sprintf( __( 'you are on the latest version (%s).', 'wpml-x-etch' ), ZS_WXE_VERSION ) )
+					: esc_html( sprintf( __( 'version %s is available — see the update row below.', 'wpml-x-etch' ), $remote_version ) )
+			);
+		}
 	}
 }
