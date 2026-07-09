@@ -53,11 +53,19 @@ these four surfaces. Each row tells you **what we use**, **where**, and
 
 | API                                                                  | File                  | Verify in DevTools console                               |
 |----------------------------------------------------------------------|-----------------------|----------------------------------------------------------|
-| `window.etchControls.builder.settingsBar.bottom.addBefore({...})`    | `src/js/entry.js:30`  | `typeof window.etchControls?.builder?.settingsBar?.bottom?.addBefore` → `'function'` |
+| `window.etchControls.builder.settingsBar.bottom.addBefore({...})`    | `src/js/entry.js`     | `typeof window.etchControls?.builder?.settingsBar?.bottom?.addBefore` → `'function'` |
 
 If `addBefore` is gone or renamed, our button never registers. Look in
 Etch's `builder.js` for the new API surface (often `addAfter`, `add`,
 or a different namespace).
+
+**Icon format (changed in Etch 1.6.2):** the `icon` field must be either an
+iconify icon NAME (rendered full-color, fetched from the iconify API) or an
+iconify icon-data OBJECT `{body, width, height}`. Raw `<svg>` strings render
+EMPTY. We pass an object whose body carries a `<g data-wxe-icon="">` marker —
+that marker is our only DOM hook to find the button (see §3.2). Registered
+`id`s are no longer reflected in the DOM (bits-ui generates its own ids), and
+`iconify--*` classes are no longer emitted.
 
 ### 3.2 DOM selectors
 
@@ -69,10 +77,13 @@ post-update DOM.
 grep -nrE "etch-builder-button|content-hub|iconify--|etch-app|etch-builder[^-]" src/js src/Admin assets/wxe-panel.css
 ```
 
-Critical selectors as of 2026-04 (regenerate the list with the grep above):
+Critical selectors as of 2026-07 / Etch 1.6.2 (regenerate the list with the grep above):
 
+- `[data-wxe-icon]` (marker we embed in our icon's SVG body — the ONLY way to
+  find our toolbar button since 1.6.2; `#wxe-translations`, `[data-id]` and
+  `.iconify--vscode-icons` all stopped existing in the DOM)
 - `.etch-builder-button` (+ `--icon-placement-before`, `--variant-outline`, `--variant-icon`)
-- `.iconify--vscode-icons` (icon class — used as fallback to find our button)
+- `.settings-bar` (settings bar root; `.settings-bar__section.bottom` holds our button)
 - `.etch-app, .etch-builder` (root container detection)
 - `.content-hub__sidebar`
 - `.content-hub__header`

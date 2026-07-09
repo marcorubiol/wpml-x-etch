@@ -224,23 +224,10 @@ export function injectStatusDot() {
   // with a MutationObserver and retry until we find it (or give up).
 
   function findBtn() {
-    // 1. Etch may render a <li> or wrapper with the registered id.
-    const byWrapperId = document.querySelector("#wxe-translations button");
-    if (byWrapperId) return byWrapperId;
-
-    // 2. Etch may set a data-id attribute on the <li> or the button itself.
-    const byDataId = document.querySelector(
-      '[data-id="wxe-translations"] button, button[data-id="wxe-translations"]',
-    );
-    if (byDataId) return byDataId;
-
-    // 3. Fallback: the button that contains our specific icon class.
-    const byIcon = document
-      .querySelector(".iconify--vscode-icons")
-      ?.closest("button.etch-builder-button");
-    if (byIcon) return byIcon;
-
-    return null;
+    // Etch 1.6.2: registered ids and iconify--* classes are gone from the DOM
+    // (was #wxe-translations / [data-id] / .iconify--vscode-icons pre-1.6.2).
+    // The data-wxe-icon marker on our raw SVG icon is the only stable hook.
+    return document.querySelector("[data-wxe-icon]")?.closest("button") || null;
   }
 
   function attachDot(btn) {

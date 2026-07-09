@@ -564,13 +564,11 @@ export function getOurButton() {
     ".settings-bar, .etch-settings-bar, .etch-app__settings-bar",
   );
   if (!settingsBar) return null;
-  // Find the button with our icon.
-  return Array.from(settingsBar.querySelectorAll('button')).find(btn => {
-    // Look for our specific icon in the SVG or the attribute.
-    return btn.innerHTML.includes('vscode-icons:file-type-wpml') ||
-           btn.getAttribute('title') === 'Translations' ||
-           btn.innerHTML.includes('iconify--vscode-icons');
-  });
+  // Etch 1.6.2: identified by the data-wxe-icon marker on our raw SVG icon
+  // (was icon-name/title/iconify-class sniffing pre-1.6.2).
+  return Array.from(settingsBar.querySelectorAll('button')).find(
+    btn => btn.querySelector('[data-wxe-icon]'),
+  );
 }
 
 export function togglePanel() {

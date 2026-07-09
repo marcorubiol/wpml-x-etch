@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,9 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.5 =
+* Fix: Etch 1.6.2 compatibility — the Translations toolbar button rendered the WPML logo in full color and lost its status dot. Etch 1.6.2 no longer reflects the registered button id in the DOM (bits-ui generates its own ids), no longer emits `iconify--*` classes, and renders iconify icon names as full-color SVGs fetched from the iconify API — so every selector we used to find our button matched nothing, and the colored brand icon replaced the monochrome one. The button icon is now a monochrome globe glyph passed as an iconify icon-data object (`{body, width, height}` — raw `<svg>` strings render empty in 1.6.2), which inherits the toolbar color via `currentColor` and carries a `data-wxe-icon` marker inside the SVG body. That marker replaces the old id/class-based selectors used to locate the button for the status dot and panel positioning. Icon-data objects are supported by @iconify/svelte since v1, so this also works on Etch 1.5.x.
 
 = 1.2.4 =
 * Fix: translating an Etch component (wp_block) failed with "ATE didn't respond in time" and never opened the editor. Root cause (confirmed in production): the panel resolves the ATE editor URL over REST, but WPML's `wpml_tm_ate_jobs_editor_url` handler (`WPML_TM_ATE_Jobs_Actions::get_editor_url`) only returns a URL when `is_current_user_activated() || is_admin()`. Over REST `is_admin()` is false, and translators/managers are typically not flagged `ate_activated` (that user meta is only set when a user confirms an ATE invitation email; admins never need it in wp-admin). So the filter returned '' even though the ATE job and its `editor_job_id` were correctly created and persisted — the blocker was the UI gate, not job creation. `TranslationJobManager::resolve_translate_url()` now falls back to `build_ate_editor_url()`, which generates the editor URL directly from the persisted `editor_job_id` via the same `ate_api->get_editor_url()` call WPML makes internally, bypassing only the gate. The URL is byte-for-byte identical to the one a user gets from wp-admin (same signed token); access remains gated by the /translate-url REST capability check. This also removes the fallback to the classic editor, which 403s on modern WPML where it is disabled.

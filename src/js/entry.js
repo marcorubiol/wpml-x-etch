@@ -7,6 +7,22 @@ import { listenForPanelChanges, listenForKeyboard, listenForVisibility, listenFo
 import { loadFilterPrefs } from './filterPrefs.js';
 import { msg } from './utils.js';
 
+// Monochrome globe glyph in Etch's hugeicons-stroke style, as an iconify
+// icon-data object ({body,width,height} — raw "<svg>" strings render empty in
+// Etch 1.6.2). currentColor makes it inherit the toolbar's white; data-wxe-icon
+// marks the button so injectStatusDot()/getOurButton() can find it (Etch strips
+// registered ids from the DOM).
+const WXE_BUTTON_ICON = {
+  body:
+    '<g data-wxe-icon="">' +
+    '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>' +
+    '<path d="M3.4 9.5h17.2M3.4 14.5h17.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>' +
+    '<path d="M12 3c-2.6 2.5-3.9 5.5-3.9 9s1.3 6.5 3.9 9c2.6-2.5 3.9-5.5 3.9-9S14.6 5.5 12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>' +
+    '</g>',
+  width: 24,
+  height: 24,
+};
+
 // Hydrate persisted Languages/Status filters before the panel is built so the
 // first render reflects the user's saved preferences.
 loadFilterPrefs();
@@ -32,9 +48,13 @@ window.addEventListener("load", () => {
     if (!window.wxeBridge) return;
 
     try {
+      // Etch 1.6.2: iconify names (was "vscode-icons:file-type-wpml") render as
+      // full-color SVGs and the registered id is no longer reflected in the DOM
+      // (bits-ui assigns its own). A raw SVG string keeps the icon monochrome
+      // (currentColor) and data-wxe-icon is our only stable DOM hook.
       window.etchControls.builder.settingsBar.bottom.addBefore({
         id: "wxe-translations",
-        icon: "vscode-icons:file-type-wpml",
+        icon: WXE_BUTTON_ICON,
         tooltip: msg().translations || "Translations",
         callback: togglePanel,
       });
