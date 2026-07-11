@@ -206,6 +206,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 
 			switch ( $block['blockName'] ) {
 				case 'etch/text':
+				case 'etch/raw-html':
 					$original = $block['attrs']['content'] ?? '';
 					if ( is_string( $original ) && isset( $translations[ $original ] ) ) {
 						$block['attrs']['content'] = $translations[ $original ];
@@ -216,8 +217,8 @@ class ContentTranslationHandler implements SubscriberInterface {
 					$inst_attrs = $block['attrs']['attributes'] ?? array();
 					if ( is_array( $inst_attrs ) ) {
 						foreach ( $inst_attrs as $key => $value ) {
-							if ( is_string( $value ) && isset( $translations[ $value ] ) ) {
-								$inst_attrs[ $key ] = $translations[ $value ];
+							if ( is_string( $value ) ) {
+								$inst_attrs[ $key ] = $this->translate_prop_value( $value, $translations );
 							}
 						}
 						$block['attrs']['attributes'] = $inst_attrs;
@@ -243,5 +244,43 @@ class ContentTranslationHandler implements SubscriberInterface {
 		}
 
 		return $blocks;
+	}
+
+	/**
+	 * Translate a component instance-attribute value, recursing into Etch's
+	 * group serialization ("{{...}}") for object props.
+	 *
+	 * Plain strings are looked up in the translations map directly. Group
+	 * values are decoded, their string leaves translated recursively, and
+	 * re-encoded — but only when re-encoding reproduces the input
+	 * byte-for-byte (round-trip guard), so an unexpected serialization
+	 * variant is left intact rather than corrupted.
+	 */
+	private function translate_prop_value( string $value, array $translations ): string {
+		$decoded = \WpmlXEtch\Etch\ComponentParser::decode_group_value( $value );
+		if ( null === $decoded ) {
+			return $translations[ $value ] ?? $value;
+		}
+
+		if ( \WpmlXEtch\Etch\ComponentParser::encode_group_value( $decoded ) !== $value ) {
+			Logger::warning( 'Skipping group prop translation: round-trip mismatch', array(
+				'value_start' => substr( $value, 0, 80 ),
+			) );
+			return $value;
+		}
+
+		$changed = false;
+		foreach ( $decoded as $key => $v ) {
+			if ( ! is_string( $v ) ) {
+				continue;
+			}
+			$new = $this->translate_prop_value( $v, $translations );
+			if ( $new !== $v ) {
+				$decoded[ $key ] = $new;
+				$changed         = true;
+			}
+		}
+
+		return $changed ? \WpmlXEtch\Etch\ComponentParser::encode_group_value( $decoded ) : $value;
 	}
 }

@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,11 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.7 =
+* Fix: texts inside NESTED component props were invisible to translation — zero strings registered, so ATE received nothing and the translated post was written with the original-language content. The parser only understood flat top-level string props; Etch serializes object/group props as nested JSON (`{{...}}` with escaped inner quotes) and hoists props defined inside condition wrappers to the parent level of the instance data (e.g. a `lede` prop nested under a "Show Lede" condition arrives as `attributes.lede`). Extraction now walks the component's prop-definition tree (groups recurse, condition wrappers are transparent), decodes Etch's group serialization on instance values, and collects string leaves — both instance attributes on pages/templates and prop defaults on the component itself. Select/condition/class-typed props remain excluded (enum tokens, expressions, style hashes).
+* Fix: applying translations now recurses into group-serialized instance attributes, replacing text leaves and re-encoding in Etch's exact format. A byte-level round-trip guard skips any value whose serialization cannot be reproduced exactly, so unexpected variants are left intact rather than corrupted.
+* New: `etch/raw-html` block content is now translatable (extracted and applied like `etch/text`); dynamic `{...}` expressions remain excluded.
 
 = 1.2.6 =
 * Reliability: the GitHub-releases update check no longer fails silently. The REST API lookup (subject to GitHub's 60 req/h unauthenticated rate limit per IP — easily exhausted on shared hosting) now falls back to the quota-free release-page redirect (`/releases/latest` → 302 → tag), verifying the `wpml-x-etch.zip` asset exists via HEAD before offering the update.
