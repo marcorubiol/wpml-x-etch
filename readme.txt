@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,14 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.8 =
+* Fix: a translated prop DEFAULT nested under a group prop was registered and translated, but never rendered — the front end kept showing the source language on every instance that inherited the default. Extraction has recursed into groups and condition wrappers since 1.2.7; injection at render time still read only the top level of `etch_component_properties` and skipped anything whose `default` was not a string. A group definition carries no string default (its value lives in its sub-properties), so every nested default fell through. Because Etch's component editor nests props under a group by default, this affected effectively every component. `TemplateTranslator` now walks the same tree the extractor registers: condition wrappers are transparent, group and repeater payloads are decoded, filled and re-encoded in Etch's exact format, and nested groups recurse. Only the parsed block being rendered is mutated, never stored content. Reported by Pontus Österlin.
+* Fix: repeater props (`array` / `repeater`) were invisible to the plugin end to end. Etch has three composite prop types — group, condition wrapper and repeater — and only the first two were understood, so a repeater's item text was never registered, never sent to ATE, never applied to translated content, and its defaults never injected. Repeaters use the same brace wrapper as groups but around a JSON list (`{[...]}`), and each item matches the same sub-property definitions. Extraction, application and injection now treat groups and repeaters as one shape: `decode_group_value()` / `encode_group_value()` became `decode_composite_value()` / `encode_composite_value()` and handle both, item lists are walked per item, and item keys left unset still receive their sub-property's translated default.
+* Fix: default injection now honours the same prop-type rule as registration. Only plain string props (`primitive: string`, no specialization) are translatable, but the injector applied any string default it found in the translation map — so a `url`, `image` or `select` prop whose default text happened to match a translated string was silently rewritten. Registration and injection now share `ComponentParser::is_translatable_prop_type()`.
+* Fix: a group prop whose instance value is a dynamic binding rather than a serialized payload is left untouched by injection instead of being replaced with a static payload.
+* Verified against Etch 1.6.7 and WPML 4.9.4 + String Translation 3.5.2: the composite prop model (group / condition / repeater), both payload wrappers and the default-resolution fallback are unchanged from 1.6.2, and every DOM selector, JS API and CSS token the builder panel depends on still exists.
+* Note: existing translations are unaffected. The strings were already registered and stored with completed status — they were simply never read — so nothing needs retranslating, and per-instance values set as a workaround keep working and can be removed at leisure.
 
 = 1.2.7 =
 * Fix: texts inside NESTED component props were invisible to translation — zero strings registered, so ATE received nothing and the translated post was written with the original-language content. The parser only understood flat top-level string props; Etch serializes object/group props as nested JSON (`{{...}}` with escaped inner quotes) and hoists props defined inside condition wrappers to the parent level of the instance data (e.g. a `lede` prop nested under a "Show Lede" condition arrives as `attributes.lede`). Extraction now walks the component's prop-definition tree (groups recurse, condition wrappers are transparent), decodes Etch's group serialization on instance values, and collects string leaves — both instance attributes on pages/templates and prop defaults on the component itself. Select/condition/class-typed props remain excluded (enum tokens, expressions, style hashes).

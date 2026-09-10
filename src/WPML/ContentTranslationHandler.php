@@ -248,39 +248,30 @@ class ContentTranslationHandler implements SubscriberInterface {
 
 	/**
 	 * Translate a component instance-attribute value, recursing into Etch's
-	 * group serialization ("{{...}}") for object props.
+	 * composite serialization: groups ("{{...}}") and repeaters ("{[...]}").
 	 *
-	 * Plain strings are looked up in the translations map directly. Group
+	 * Plain strings are looked up in the translations map directly. Composite
 	 * values are decoded, their string leaves translated recursively, and
 	 * re-encoded — but only when re-encoding reproduces the input
 	 * byte-for-byte (round-trip guard), so an unexpected serialization
 	 * variant is left intact rather than corrupted.
 	 */
 	private function translate_prop_value( string $value, array $translations ): string {
-		$decoded = \WpmlXEtch\Etch\ComponentParser::decode_group_value( $value );
+		$decoded = \WpmlXEtch\Etch\ComponentParser::decode_composite_value( $value );
 		if ( null === $decoded ) {
 			return $translations[ $value ] ?? $value;
 		}
 
-		if ( \WpmlXEtch\Etch\ComponentParser::encode_group_value( $decoded ) !== $value ) {
-			Logger::warning( 'Skipping group prop translation: round-trip mismatch', array(
+		if ( \WpmlXEtch\Etch\ComponentParser::encode_composite_value( $decoded ) !== $value ) {
+			Logger::warning( 'Skipping composite prop translation: round-trip mismatch', array(
 				'value_start' => substr( $value, 0, 80 ),
 			) );
 			return $value;
 		}
 
 		$changed = false;
-		foreach ( $decoded as $key => $v ) {
-			if ( ! is_string( $v ) ) {
-				continue;
-			}
-			$new = $this->translate_prop_value( $v, $translations );
-			if ( $new !== $v ) {
-				$decoded[ $key ] = $new;
-				$changed         = true;
-			}
-		}
+		$walked  = \WpmlXEtch\Etch\ComponentParser::translate_composite_data( $decoded, $translations, $changed );
 
-		return $changed ? \WpmlXEtch\Etch\ComponentParser::encode_group_value( $decoded ) : $value;
+		return $changed ? \WpmlXEtch\Etch\ComponentParser::encode_composite_value( $walked ) : $value;
 	}
 }

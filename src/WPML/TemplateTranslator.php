@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace WpmlXEtch\WPML;
 
 use WpmlXEtch\Core\SubscriberInterface;
+use WpmlXEtch\Etch\ComponentParser;
 use WpmlXEtch\Utils\Logger;
 
 /**
@@ -38,7 +39,8 @@ class TemplateTranslator implements SubscriberInterface {
 
 	/**
 	 * Translate etch/component ref to current language's wp_block post
-	 * and inject translated property defaults for unset props.
+	 * and inject translated property defaults for unset props, at every
+	 * nesting level the component defines.
 	 */
 	public function translate_component_ref( array $parsed_block, array $source_block ): array {
 		if ( ( $parsed_block['blockName'] ?? '' ) !== 'etch/component' ) {
@@ -96,29 +98,141 @@ class TemplateTranslator implements SubscriberInterface {
 			}
 		}
 
-		$prop_defs  = get_post_meta( $ref, 'etch_component_properties', true ) ?: array();
+		$prop_defs = get_post_meta( $ref, 'etch_component_properties', true ) ?: array();
+		if ( ! is_array( $prop_defs ) ) {
+			return;
+		}
 		$inst_attrs = $parsed_block['attrs']['attributes'] ?? array();
 		if ( ! is_array( $inst_attrs ) ) {
 			$inst_attrs = array();
 		}
+
+		$this->inject_defaults( $prop_defs, $inst_attrs, $this->prop_defaults_cache[ $cache_key ] );
+
+		$parsed_block['attrs']['attributes'] = $inst_attrs;
+	}
+
+	/**
+	 * Fill props the instance leaves unset with their translated defaults,
+	 * walking the same nesting the string extractor registers.
+	 *
+	 * Three shapes, mirroring ComponentParser:
+	 * - Condition wrappers are transparent: their children sit at this level.
+	 * - Composite props (group / repeater) keep their value as an Etch-
+	 *   serialized payload under their own key. When the instance leaves one
+	 *   unset, Etch falls back to the prop's own default payload and then to
+	 *   each leaf's default, so both are translated here.
+	 * - Leaves take their translated default directly.
+	 *
+	 * Values the instance sets explicitly are never touched: those are already
+	 * translated in the translated post's content. Likewise a composite whose
+	 * instance value is not a decodable payload — a dynamic binding, say — is
+	 * left exactly as it is.
+	 *
+	 * Only the parsed block being rendered is mutated, never stored content,
+	 * so re-encoding a payload cannot corrupt anything on disk.
+	 *
+	 * @param array<string, string> $map Original => translated.
+	 * @return bool True when at least one value was injected.
+	 */
+	private function inject_defaults( array $prop_defs, array &$attrs, array $map ): bool {
+		$changed = false;
+
 		foreach ( $prop_defs as $prop ) {
-			$key     = $prop['key'] ?? '';
+			if ( ! is_array( $prop ) ) {
+				continue;
+			}
+			$children = $prop['properties'] ?? array();
+			$children = is_array( $children ) ? $children : array();
+
+			if ( ComponentParser::is_condition_prop( $prop ) ) {
+				if ( $this->inject_defaults( $children, $attrs, $map ) ) {
+					$changed = true;
+				}
+				continue;
+			}
+
+			$key = $prop['key'] ?? '';
+			if ( ! is_string( $key ) || '' === $key ) {
+				continue;
+			}
+
+			if ( ComponentParser::is_composite_prop( $prop ) ) {
+				if ( empty( $children ) ) {
+					continue;
+				}
+				if ( $this->inject_composite_defaults( $prop, $children, $key, $attrs, $map ) ) {
+					$changed = true;
+				}
+				continue;
+			}
+
+			if ( isset( $attrs[ $key ] ) || ! ComponentParser::is_translatable_prop_type( $prop ) ) {
+				continue;
+			}
 			$default = $prop['default'] ?? null;
-			if ( empty( $key ) || ! is_string( $default ) || '' === $default ) {
+			if ( ! is_string( $default ) || '' === $default ) {
 				continue;
 			}
 			if ( preg_match( \WpmlXEtch\Core\Plugin::DYNAMIC_EXPR_PATTERN, $default ) ) {
 				continue;
 			}
-			if ( isset( $inst_attrs[ $key ] ) ) {
-				continue;
-			}
-			$translated = $this->prop_defaults_cache[ $cache_key ][ $default ] ?? null;
+			$translated = $map[ $default ] ?? null;
 			if ( $translated ) {
-				$inst_attrs[ $key ] = $translated;
+				$attrs[ $key ] = $translated;
+				$changed       = true;
 			}
 		}
-		$parsed_block['attrs']['attributes'] = $inst_attrs;
+
+		return $changed;
+	}
+
+	/**
+	 * Inject translated defaults into one composite prop's payload.
+	 *
+	 * @param array<string, string> $map Original => translated.
+	 * @return bool True when the payload was rewritten.
+	 */
+	private function inject_composite_defaults( array $prop, array $children, string $key, array &$attrs, array $map ): bool {
+		$payload_changed = false;
+
+		if ( isset( $attrs[ $key ] ) ) {
+			$payload = is_string( $attrs[ $key ] )
+				? ComponentParser::decode_composite_value( $attrs[ $key ] )
+				: $attrs[ $key ];
+			if ( ! is_array( $payload ) ) {
+				return false;
+			}
+		} else {
+			$default = $prop['default'] ?? null;
+			$payload = is_string( $default ) ? ComponentParser::decode_composite_value( $default ) : $default;
+			$payload = is_array( $payload ) ? $payload : array();
+			if ( ! empty( $payload ) ) {
+				$payload = ComponentParser::translate_composite_data( $payload, $map, $payload_changed );
+			}
+		}
+
+		if ( ComponentParser::is_repeater_prop( $prop ) ) {
+			foreach ( $payload as $index => $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				if ( $this->inject_defaults( $children, $item, $map ) ) {
+					$payload[ $index ] = $item;
+					$payload_changed   = true;
+				}
+			}
+		} elseif ( $this->inject_defaults( $children, $payload, $map ) ) {
+			$payload_changed = true;
+		}
+
+		if ( ! $payload_changed ) {
+			return false;
+		}
+
+		$attrs[ $key ] = ComponentParser::encode_composite_value( $payload );
+
+		return true;
 	}
 
 	/** Hook: pre_get_block_templates — swap slugs to translated wp_template posts. */

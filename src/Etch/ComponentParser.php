@@ -30,7 +30,7 @@ class ComponentParser {
 		$blocks = parse_blocks( (string) $post->post_content );
 		$this->collect_translatable_values_from_blocks( $blocks, $values );
 
-		// Include component property defaults — walking group/condition nesting.
+		// Include component property defaults — walking group/repeater/condition nesting.
 		if ( 'wp_block' === get_post_type( $post_id ) ) {
 			$props = get_post_meta( $post_id, 'etch_component_properties', true );
 			if ( is_array( $props ) ) {
@@ -59,7 +59,7 @@ class ComponentParser {
 			}
 
 			// Etch component blocks: collect instance attribute values, walking
-			// group props (Etch-serialized nested objects) via the prop-def tree.
+			// composite props (Etch-serialized groups and repeaters) via the prop-def tree.
 			if ( 'etch/component' === $block['blockName'] ) {
 				$inst_attrs = $block['attrs']['attributes'] ?? array();
 				if ( is_array( $inst_attrs ) ) {
@@ -137,12 +137,54 @@ class ComponentParser {
 		return true;
 	}
 
-	private static function is_translatable_prop_type( array $prop ): bool {
-		$type        = $prop['type'] ?? array();
+	/**
+	 * Read a prop definition's primitive/specialized pair.
+	 *
+	 * @return array{0: string, 1: string}
+	 */
+	private static function prop_type( array $prop ): array {
+		$type = $prop['type'] ?? array();
+		if ( ! is_array( $type ) ) {
+			return array( '', '' );
+		}
 		$primitive   = $type['primitive'] ?? '';
 		$specialized = $type['specialized'] ?? '';
 
+		return array(
+			is_string( $primitive ) ? $primitive : '',
+			is_string( $specialized ) ? $specialized : '',
+		);
+	}
+
+	public static function is_translatable_prop_type( array $prop ): bool {
+		[ $primitive, $specialized ] = self::prop_type( $prop );
+
 		return 'string' === $primitive && '' === $specialized;
+	}
+
+	/**
+	 * Group and repeater props are the composite types: both nest sub-property
+	 * definitions and both store their value as a wrapped JSON payload.
+	 */
+	public static function is_composite_prop( array $prop ): bool {
+		[ $primitive, $specialized ] = self::prop_type( $prop );
+
+		return ( 'object' === $primitive && 'group' === $specialized )
+			|| ( 'array' === $primitive && 'repeater' === $specialized );
+	}
+
+	/** Repeater props hold a LIST of items; groups hold a single keyed map. */
+	public static function is_repeater_prop( array $prop ): bool {
+		[ $primitive, $specialized ] = self::prop_type( $prop );
+
+		return 'array' === $primitive && 'repeater' === $specialized;
+	}
+
+	/** Condition wrappers are transparent: their children live at the parent level. */
+	public static function is_condition_prop( array $prop ): bool {
+		[ , $specialized ] = self::prop_type( $prop );
+
+		return 'condition' === $specialized;
 	}
 
 	/** Shared text filters: non-empty, real text, not a dynamic expression or dotted path. */
@@ -155,14 +197,17 @@ class ComponentParser {
 	}
 
 	/**
-	 * Decode an Etch group-prop value ("{{...json...}}") into an array.
+	 * Decode an Etch composite prop value into an array.
 	 *
-	 * Etch serializes object/group prop values as JSON wrapped in an extra
-	 * brace pair; nested groups appear as embedded strings in the same format.
-	 * Returns null when the value is not in that format.
+	 * Etch wraps both composite payloads in an extra brace pair: groups as
+	 * "{{...json object...}}" and repeaters as "{[...json array...]}".
+	 * Composites nested inside either appear as embedded strings in the same
+	 * format. Returns null when the value is in neither format.
 	 */
-	public static function decode_group_value( string $value ): ?array {
-		if ( ! str_starts_with( $value, '{{' ) || ! str_ends_with( $value, '}}' ) ) {
+	public static function decode_composite_value( string $value ): ?array {
+		$is_group    = str_starts_with( $value, '{{' ) && str_ends_with( $value, '}}' );
+		$is_repeater = str_starts_with( $value, '{[' ) && str_ends_with( $value, ']}' );
+		if ( ! $is_group && ! $is_repeater ) {
 			return null;
 		}
 		$decoded = json_decode( substr( $value, 1, -1 ), true );
@@ -170,33 +215,100 @@ class ComponentParser {
 	}
 
 	/**
-	 * Re-serialize a decoded group value in Etch's exact format.
+	 * Re-serialize a decoded composite value in Etch's exact format.
 	 *
-	 * JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE match Etch's builder
-	 * output; callers must round-trip-verify before rewriting stored values.
+	 * The builder emits `{${JSON.stringify(value)}}` for groups and repeaters
+	 * alike, so one encoder covers both shapes; JSON_UNESCAPED_SLASHES +
+	 * JSON_UNESCAPED_UNICODE match its output. Callers that rewrite a STORED
+	 * value must round-trip-verify first.
 	 */
-	public static function encode_group_value( array $data ): string {
+	public static function encode_composite_value( array $data ): string {
 		return '{' . wp_json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '}';
 	}
 
 	/**
-	 * Collect translatable prop DEFAULTS, recursing into group props and
-	 * condition wrappers (whose children hold the real defaults).
+	 * Replace translated strings inside a decoded composite payload.
+	 *
+	 * Walks group maps and repeater item lists alike, recursing into embedded
+	 * composite strings. A nested composite is only rewritten when re-encoding
+	 * reproduces it byte-for-byte, so an unexpected serialization variant is
+	 * left intact rather than corrupted.
+	 *
+	 * @param array<mixed>          $data         Decoded composite payload.
+	 * @param array<string, string> $translations Map of original => translated.
+	 * @param bool                  $changed      Set to true when a value was replaced.
+	 * @return array<mixed>
+	 */
+	public static function translate_composite_data( array $data, array $translations, bool &$changed ): array {
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$data[ $key ] = self::translate_composite_data( $value, $translations, $changed );
+				continue;
+			}
+			if ( ! is_string( $value ) ) {
+				continue;
+			}
+
+			$decoded = self::decode_composite_value( $value );
+			if ( null === $decoded ) {
+				if ( isset( $translations[ $value ] ) && $translations[ $value ] !== $value ) {
+					$data[ $key ] = $translations[ $value ];
+					$changed      = true;
+				}
+				continue;
+			}
+
+			if ( self::encode_composite_value( $decoded ) !== $value ) {
+				continue;
+			}
+
+			$nested_changed = false;
+			$walked         = self::translate_composite_data( $decoded, $translations, $nested_changed );
+			if ( $nested_changed ) {
+				$data[ $key ] = self::encode_composite_value( $walked );
+				$changed      = true;
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Collect translatable prop DEFAULTS, recursing into composite props
+	 * (group / repeater) and condition wrappers, whose children hold the
+	 * real defaults.
+	 *
+	 * A composite prop contributes text from two places, and Etch renders
+	 * both: the defaults of its leaf sub-props, used per key and per repeater
+	 * item whenever the instance leaves one unset, and the payload of its own
+	 * `default`, which Etch takes as the base value when the instance leaves
+	 * the whole prop unset.
 	 */
 	private function collect_default_values( array $props, array &$values ): void {
 		foreach ( $props as $prop ) {
 			if ( ! is_array( $prop ) ) {
 				continue;
 			}
-			$type        = $prop['type'] ?? array();
-			$primitive   = $type['primitive'] ?? '';
-			$specialized = $type['specialized'] ?? '';
 
-			if ( 'condition' === $specialized || ( 'object' === $primitive && 'group' === $specialized ) ) {
+			if ( self::is_condition_prop( $prop ) ) {
 				$children = $prop['properties'] ?? array();
 				if ( is_array( $children ) ) {
 					$this->collect_default_values( $children, $values );
 				}
+				continue;
+			}
+
+			if ( self::is_composite_prop( $prop ) ) {
+				$children = $prop['properties'] ?? array();
+				if ( ! is_array( $children ) ) {
+					continue;
+				}
+				$this->collect_default_values( $children, $values );
+				$this->collect_from_composite_value(
+					$prop['default'] ?? null,
+					$this->build_translatable_tree( $children ),
+					$values
+				);
 				continue;
 			}
 
@@ -214,7 +326,10 @@ class ComponentParser {
 	 * Build the translatable-leaf tree for a component's prop definitions,
 	 * mirroring the shape of INSTANCE attribute values:
 	 *   key => true             — translatable string leaf
-	 *   key => array( ... )     — group prop (nested keys inside)
+	 *   key => array( ... )     — composite prop (nested keys inside)
+	 *
+	 * Groups and repeaters share one node shape: a repeater's node describes a
+	 * single ITEM, and the walker applies it to every item in the list.
 	 *
 	 * Condition-specialized wrappers are transparent in the data model —
 	 * their children live at the parent level in instance values (e.g. the
@@ -227,11 +342,7 @@ class ComponentParser {
 			if ( ! is_array( $prop ) ) {
 				continue;
 			}
-			$type        = $prop['type'] ?? array();
-			$primitive   = $type['primitive'] ?? '';
-			$specialized = $type['specialized'] ?? '';
-
-			if ( 'condition' === $specialized ) {
+			if ( self::is_condition_prop( $prop ) ) {
 				$children = $prop['properties'] ?? array();
 				if ( is_array( $children ) ) {
 					$tree = $tree + $this->build_translatable_tree( $children );
@@ -239,12 +350,12 @@ class ComponentParser {
 				continue;
 			}
 
-			$key = (string) ( $prop['key'] ?? '' );
-			if ( '' === $key ) {
+			$key = $prop['key'] ?? '';
+			if ( ! is_string( $key ) || '' === $key ) {
 				continue;
 			}
 
-			if ( 'object' === $primitive && 'group' === $specialized ) {
+			if ( self::is_composite_prop( $prop ) ) {
 				$children = $prop['properties'] ?? array();
 				$subtree  = is_array( $children ) ? $this->build_translatable_tree( $children ) : array();
 				if ( ! empty( $subtree ) ) {
@@ -274,26 +385,47 @@ class ComponentParser {
 
 	/**
 	 * Collect translatable values from component INSTANCE attributes,
-	 * decoding Etch group serialization for nested props.
+	 * decoding Etch composite serialization for nested props.
 	 */
 	private function collect_from_instance_values( array $attrs, array $tree, array &$values ): void {
 		foreach ( $attrs as $key => $v ) {
 			$node = $tree[ $key ] ?? null;
-			if ( null === $node || ! is_string( $v ) ) {
+			if ( null === $node ) {
 				continue;
 			}
 
 			if ( true === $node ) {
-				if ( self::is_collectable_text( $v ) ) {
+				if ( is_string( $v ) && self::is_collectable_text( $v ) ) {
 					$values[] = $v;
 				}
 				continue;
 			}
 
-			$decoded = self::decode_group_value( $v );
-			if ( is_array( $decoded ) ) {
-				$this->collect_from_instance_values( $decoded, $node, $values );
-			}
+			$this->collect_from_composite_value( $v, $node, $values );
 		}
+	}
+
+	/**
+	 * Walk a composite prop value against its sub-tree.
+	 *
+	 * Accepts either the wrapped string Etch stores in block attributes and
+	 * prop defaults, or an already-decoded array — repeater items arrive that
+	 * way. A keyed map is a group and is walked directly; a list is a repeater,
+	 * whose items each match the same sub-tree.
+	 */
+	private function collect_from_composite_value( mixed $value, array $tree, array &$values ): void {
+		$decoded = is_string( $value ) ? self::decode_composite_value( $value ) : $value;
+		if ( ! is_array( $decoded ) ) {
+			return;
+		}
+
+		if ( array_is_list( $decoded ) ) {
+			foreach ( $decoded as $item ) {
+				$this->collect_from_composite_value( $item, $tree, $values );
+			}
+			return;
+		}
+
+		$this->collect_from_instance_values( $decoded, $tree, $values );
 	}
 }

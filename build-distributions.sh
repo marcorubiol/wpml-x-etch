@@ -35,6 +35,7 @@ RSYNC_EXCLUDES=(
 	--exclude='intelephense.json'
 	--exclude='composer.lock'
 	--exclude='.github'
+	--exclude='tests'
 	--exclude='wxe-language-switcher.html'
 )
 
