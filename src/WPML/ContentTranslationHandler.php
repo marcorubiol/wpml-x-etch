@@ -15,9 +15,11 @@
  * the wpmldev-672 term-cache workaround is applied. wp_update_post() is kept
  * as a fallback for installations where WPML is missing or downgraded.
  *
- * Queries icl_strings, icl_string_translations, and icl_string_packages
- * directly because WPML's string API does not expose package-scoped
- * bulk translation lookups.
+ * Pending translations: while any string has neither a completed nor a
+ * carried-over ("needs update") translation, the translated post keeps its
+ * previous content instead of rendering source-language text. That content is
+ * captured on pre_post_update, because WPML's own writers overwrite the
+ * translated post with the original before our hooks run.
  *
  * @package WpmlXEtch
  */
@@ -34,11 +36,30 @@ use WpmlXEtch\Utils\Logger;
  */
 class ContentTranslationHandler implements SubscriberInterface {
 
+	/** @var array<int, string> Post content as it was before this request first rewrote it. */
+	private array $previous_content = array();
+
 	public static function getSubscribedEvents(): array {
 		return array(
+			array( 'pre_post_update', 'remember_previous_content', 10, 1 ),
 			array( 'wpml_page_builder_string_translated', 'fix_gutenberg_overwrite', 11, 5 ),
 			array( 'wpml_pro_translation_completed', 'on_translation_completed', 20, 3 ),
 		);
+	}
+
+	/**
+	 * Hook: pre_post_update — remember an Etch post's content before the first
+	 * write of this request, so a pending translation can be kept even after
+	 * WPML has overwritten the post with the original.
+	 */
+	public function remember_previous_content( int $post_id ): void {
+		if ( isset( $this->previous_content[ $post_id ] ) ) {
+			return;
+		}
+		$post = get_post( $post_id );
+		if ( $post && str_contains( $post->post_content, '<!-- wp:etch/' ) ) {
+			$this->previous_content[ $post_id ] = $post->post_content;
+		}
 	}
 
 	/**
@@ -115,7 +136,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 			return;
 		}
 
-		$translations = $this->get_etch_translations( $original_post_id, $lang );
+		[ 'translations' => $translations, 'pending' => $pending ] = StringHandler::get_package_translations( $original_post_id, $lang );
 
 		if ( empty( $translations ) ) {
 			Logger::debug( 'No Etch translations, writing original content as-is', array(
@@ -125,9 +146,34 @@ class ContentTranslationHandler implements SubscriberInterface {
 			) );
 		}
 
-		$blocks  = parse_blocks( $original_post->post_content );
-		$blocks  = $this->replace_translations_in_blocks( $blocks, $translations );
-		$content = serialize_blocks( $blocks );
+		$blocks         = parse_blocks( $original_post->post_content );
+		$source_content = serialize_blocks( $blocks );
+		$blocks         = $this->replace_translations_in_blocks( $blocks, $translations );
+		$content        = serialize_blocks( $blocks );
+
+		if ( $pending > 0 && StringHandler::keeps_previous_translation() ) {
+			$previous = $this->get_previous_translation( $translated_post_id, $original_post->post_content, $source_content );
+			if ( null !== $previous ) {
+				Logger::info( 'Kept previous translation: strings pending', array(
+					'original_post_id'   => $original_post_id,
+					'translated_post_id' => $translated_post_id,
+					'lang'               => $lang,
+					'pending'            => $pending,
+				) );
+				$content = $previous;
+			}
+		}
+
+		/**
+		 * Filter the translated post_content right before it is written.
+		 *
+		 * @param string                $content            Content about to be written.
+		 * @param int                   $original_post_id   Original post ID.
+		 * @param int                   $translated_post_id Translated post ID.
+		 * @param string                $lang               Language code of the translated post.
+		 * @param array<string, string> $translations       Map of original => translated values applied.
+		 */
+		$content = (string) apply_filters( 'zs_wxe_translated_post_content', $content, $original_post_id, $translated_post_id, $lang, $translations );
 
 		// Use WPML's canonical post writer when available: it switches language
 		// context and applies the wpmldev-672 term-cache workaround. Falls back
@@ -151,6 +197,10 @@ class ContentTranslationHandler implements SubscriberInterface {
 			return;
 		}
 
+		// What this request wrote is now the translation to keep if a later
+		// pass in the same request finds strings pending.
+		$this->previous_content[ $translated_post_id ] = $content;
+
 		Logger::info( 'Applied Etch translations to post_content', array(
 			'translated_post_id' => $translated_post_id,
 			'original_post_id'   => $original_post_id,
@@ -160,37 +210,21 @@ class ContentTranslationHandler implements SubscriberInterface {
 	}
 
 	/**
-	 * Query completed Etch translations for a post's string package.
-	 *
-	 * @return array<string, string> Map of original value → translated value.
+	 * The translated post's previous Etch content, or null when there is none
+	 * worth keeping — no Etch blocks yet, or just a copy of the original (a new
+	 * translation WPML created from the source).
 	 */
-	public function get_etch_translations( int $original_post_id, string $lang ): array {
-		global $wpdb;
+	private function get_previous_translation( int $translated_post_id, string $original_content, string $source_content ): ?string {
+		$previous = $this->previous_content[ $translated_post_id ] ?? get_post( $translated_post_id )?->post_content;
 
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT s.value AS original, st.value AS translated
-			 FROM {$wpdb->prefix}icl_strings s
-			 JOIN {$wpdb->prefix}icl_string_packages p ON s.string_package_id = p.ID
-			 JOIN {$wpdb->prefix}icl_string_translations st ON st.string_id = s.id
-			 WHERE p.kind = %s AND p.post_id = %d
-			   AND st.language = %s AND st.status = 10",
-			StringHandler::PACKAGE_KIND,
-			$original_post_id,
-			$lang
-		) );
-
-		if ( ! $rows ) {
-			return array();
+		if ( ! is_string( $previous )
+			|| ! str_contains( $previous, '<!-- wp:etch/' )
+			|| $previous === $original_content
+			|| $previous === $source_content ) {
+			return null;
 		}
 
-		$map = array();
-		foreach ( $rows as $row ) {
-			if ( $row->original !== $row->translated ) {
-				$map[ $row->original ] = $row->translated;
-			}
-		}
-
-		return $map;
+		return $previous;
 	}
 
 	/**

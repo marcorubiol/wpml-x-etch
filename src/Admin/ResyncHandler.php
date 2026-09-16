@@ -520,19 +520,11 @@ class ResyncHandler {
 			return array();
 		}
 
+		// Register (and reuse translations for edited texts) before cleanup
+		// deletes the strings they replaced.
+		$this->string_handler->register_package_strings( $pid );
+
 		$values = $this->parser->get_translatable_values( $pid );
-
-		$etch_package = array(
-			'kind'    => StringHandler::PACKAGE_KIND,
-			'name'    => $pid,
-			'title'   => 'Etch Page ' . $pid,
-			'post_id' => $pid,
-		);
-
-		foreach ( $values as $value ) {
-			do_action( 'wpml_register_string', $value, md5( $value ), $etch_package, $value, 'LINE' );
-		}
-
 		$this->string_handler->cleanup_stale_package_strings( $pid, $values );
 
 		// Update snapshot so MetaSync doesn't re-invalidate.

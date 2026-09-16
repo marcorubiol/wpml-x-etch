@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,15 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.9 =
+* Fix: editing a text in the original made the translated page show the source language until the text was translated again. Visitors of the English page of a German site suddenly read German. Three things combined: a string's identity is the md5 of its value, so an edited text registers as a NEW string; saving the original then deleted the old string together with its translations; and the resync that runs after every Etch save (and Force Sync, and job completion) rebuilt the translated post from the original, writing untranslated strings in the source language. WPML never shows this with its own page-builder integrations, because it does not rebuild translated posts when the original is saved, and it carries translations over to edited texts.
+* New: translations of edited texts are carried over, the way WPML does it for Gutenberg, Elementor and Beaver Builder. Etch strings are now registered in document order with their WPML location, and before stale strings are cleaned up WPML's own reuse pass (`WPML_PB_Reuse_Translations`) pairs each new string with the one it replaced — same location and similar text, or similar text alone — and copies its translations with status "needs update". The translated page keeps the previous wording while layout and structure changes still apply immediately. The page stays "Needs Update" until the text is translated again, since completeness only counts completed translations. Translated component prop defaults use the carried-over wording too.
+* New: while any text has neither a completed nor a carried-over translation (a new text, or a text rewritten beyond recognition), the translated post keeps its previous content instead of mixing in source-language text — WPML's own behaviour. It is rebuilt as soon as the pending texts are translated. The previous content is captured before WPML's writers overwrite the translated post, so this also holds when a translation job for the page is completed.
+* New: filter `zs_wxe_translated_post_content( $content, $original_post_id, $translated_post_id, $lang, $translations )` runs right before a translated post is written.
+* New: filter `zs_wxe_keep_previous_translation` (default `true`). Return `false` to restore the previous behaviour: translated posts are always rebuilt, and untranslated texts show in the source language.
+* Limit: a component prop default that is new, or rewritten beyond recognition, renders in the source language until translated, because defaults are resolved at render time and there is no stored content to keep.
+* Note: 1.2.8 was not released separately; its changes ship in this release.
 
 = 1.2.8 =
 * Fix: a translated prop DEFAULT nested under a group prop was registered and translated, but never rendered — the front end kept showing the source language on every instance that inherited the default. Extraction has recursed into groups and condition wrappers since 1.2.7; injection at render time still read only the top level of `etch_component_properties` and skipped anything whose `default` was not a string. A group definition carries no string default (its value lives in its sub-properties), so every nested default fell through. Because Etch's component editor nests props under a group by default, this affected effectively every component. `TemplateTranslator` now walks the same tree the extractor registers: condition wrappers are transparent, group and repeater payloads are decoded, filled and re-encoded in Etch's exact format, and nested groups recurse. Only the parsed block being rendered is mutated, never stored content. Reported by Pontus Österlin.

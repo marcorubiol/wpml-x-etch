@@ -15,12 +15,31 @@ namespace WpmlXEtch\Etch;
 class ComponentParser {
 
 	/**
-	 * Get all translatable values from a post.
+	 * Get all translatable values from a post, sorted.
+	 *
+	 * The sorted list is the change-detection snapshot (`_zs_wxe_values`) and
+	 * the md5 source, so its shape must stay stable across releases.
 	 *
 	 * @param int $post_id The post ID to parse.
 	 * @return string[]
 	 */
 	public function get_translatable_values( int $post_id ): array {
+		$values = $this->get_translatable_values_in_order( $post_id );
+		sort( $values );
+
+		return $values;
+	}
+
+	/**
+	 * Same values as get_translatable_values(), in document order.
+	 *
+	 * String registration uses this order as each string's WPML location, which
+	 * lets translation reuse pair an edited text with the one it replaced.
+	 *
+	 * @param int $post_id The post ID to parse.
+	 * @return string[]
+	 */
+	public function get_translatable_values_in_order( int $post_id ): array {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return array();
@@ -38,10 +57,7 @@ class ComponentParser {
 			}
 		}
 
-		$values = array_values( array_filter( $values, 'is_string' ) );
-		sort( $values );
-
-		return $values;
+		return array_values( array_filter( $values, 'is_string' ) );
 	}
 
 	private function collect_translatable_values_from_blocks( array $blocks, array &$values, array &$prop_cache = array() ): void {

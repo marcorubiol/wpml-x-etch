@@ -72,30 +72,11 @@ class TemplateTranslator implements SubscriberInterface {
 	}
 
 	private function inject_translated_prop_defaults( int $ref, string $current_lang, array &$parsed_block ): void {
-		global $wpdb;
-
-		// Cache Etch translations for this component (original → translated).
+		// Cache Etch translations for this component (original → translated),
+		// including the previous wording of defaults edited since translation.
 		$cache_key = $ref . '|' . $current_lang;
 		if ( ! array_key_exists( $cache_key, $this->prop_defaults_cache ) ) {
-			$rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT s.value AS original, st.value AS translated
-				 FROM {$wpdb->prefix}icl_string_translations st
-				 JOIN {$wpdb->prefix}icl_strings s ON s.id = st.string_id
-				 JOIN {$wpdb->prefix}icl_string_packages p ON p.ID = s.string_package_id
-				 WHERE p.post_id = %d
-				   AND p.kind   = %s
-				   AND st.language = %s
-				   AND st.status   = 10",
-				$ref,
-				StringHandler::PACKAGE_KIND,
-				$current_lang
-			) );
-			$this->prop_defaults_cache[ $cache_key ] = array();
-			foreach ( $rows as $row ) {
-				if ( $row->original !== $row->translated ) {
-					$this->prop_defaults_cache[ $cache_key ][ $row->original ] = $row->translated;
-				}
-			}
+			$this->prop_defaults_cache[ $cache_key ] = StringHandler::get_package_translations( $ref, $current_lang )['translations'];
 		}
 
 		$prop_defs = get_post_meta( $ref, 'etch_component_properties', true ) ?: array();

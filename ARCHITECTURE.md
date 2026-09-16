@@ -63,6 +63,35 @@ the component output is empty.
 This is the same pattern as Elementor: Gutenberg handler writes first (priority 10),
 then the custom handler writes on top (priority 11). Two writes per save — acceptable.
 
+### Edited texts and pending translations (v1.2.9)
+
+A string's identity is `md5(value)`, so editing a text registers a new string and the old
+one (with its translations) is deleted by stale cleanup. Because the resync after every
+Etch save rebuilds translated posts, visitors used to see the source text until it was
+retranslated. WPML's own integrations avoid this, and so do we now:
+
+1. **Reuse (registration).** `StringHandler::register_package_strings()` registers strings
+   in document order and stores each one's position as its WPML `location`. Before stale
+   cleanup runs, it hands the package strings before/after registration and the removed
+   ones to WPML's `WPML_PB_Reuse_Translations` — the same pass Gutenberg, Elementor and
+   Beaver Builder run. It pairs a new string with a removed one (same location and >50%
+   similar words, or similar words alone) and copies the translations with status
+   `ICL_TM_NEEDS_UPDATE` (3). Guarded by `class_exists` + `try/catch`: if WPML renames the
+   class, reuse is skipped and step 3 still protects visitors.
+2. **Fallback (application).** `StringHandler::get_package_translations()` returns completed
+   translations, falling back to status-3 translations, and counts strings with neither as
+   pending. Used by `ContentTranslationHandler` and `TemplateTranslator` (prop defaults).
+   Completeness checks (`is_translation_complete`, `has_untranslated_etch_strings`) still
+   count only status 10, so the page stays `needs_update`.
+3. **Keep previous content (pending).** If strings are still pending, the translated post
+   keeps its previous Etch content instead of rendering source text, unless that content is
+   empty or just a copy of the original. The previous content is captured on
+   `pre_post_update` (first write of the request), because WPML's job-completion and
+   Gutenberg writers overwrite the translated post with the original before our hooks run.
+
+Filters: `zs_wxe_keep_previous_translation` (default `true`; `false` restores the old
+behaviour) and `zs_wxe_translated_post_content` (final content before the write).
+
 ## Translation status
 
 ### Status mapping
@@ -199,10 +228,12 @@ two ways:
 
 ### What it does
 
-1. Re-registers Etch strings for the post and its referenced components
+1. Re-registers Etch strings for the post and its referenced components, reusing
+   translations for edited texts (see "Edited texts and pending translations")
 2. Cleans stale/orphaned strings via `cleanup_stale_package_strings`
 3. Copies `etch_*` meta from original to all translated posts
-4. Applies Etch translations to translated post_content (`ContentTranslationHandler`)
+4. Applies Etch translations to translated post_content (`ContentTranslationHandler`),
+   keeping the previous content while strings are pending
 5. Checks completeness: queries `icl_strings` + `icl_string_translations` to see if all
    strings have `status=10` translations for each language
 6. If complete and not in_progress: marks `icl_translation_status` as `status=10,
