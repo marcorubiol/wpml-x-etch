@@ -301,8 +301,29 @@ class StringHandler implements SubscriberInterface {
 	}
 
 	/**
+	 * Minimum character similarity (similar_text) for our own same-location
+	 * reuse pass. Catches short-label edits WPML's word-based diff misses
+	 * ("Jetzt bewerben" → "Jetzt bewerben!" is 97% here, 36% for WPML) while
+	 * real rewrites ("Über uns" → "Unser Team", 32%) stay pending.
+	 */
+	private const REUSE_MIN_CHAR_SIMILARITY = 60;
+
+	/**
+	 * Whether a value is a link target (path, anchor, URL, mailto/tel) rather
+	 * than visible text.
+	 */
+	public static function is_url_like( string $value ): bool {
+		return 1 === preg_match( '~^(?:https?://|mailto:|tel:|/|#|\?)\S*$~i', trim( $value ) );
+	}
+
+	/**
 	 * Carry translations from removed strings over to the strings that
-	 * replaced them, via WPML's own reuse pass.
+	 * replaced them.
+	 *
+	 * First WPML's own reuse pass, then ours for what it left unpaired: a new
+	 * string takes over the removed string at the same location when both are
+	 * link targets (paths are never "similar" to each other) or when their
+	 * characters are at least REUSE_MIN_CHAR_SIMILARITY percent alike.
 	 *
 	 * @param array<int, array{id: int, value: string, location: int}> $before Package strings before registration.
 	 * @param array<int, array{id: int, value: string, location: int}> $after  Package strings after registration.
@@ -310,10 +331,10 @@ class StringHandler implements SubscriberInterface {
 	 */
 	private function reuse_translations( int $post_id, array $before, array $after, array $values ): void {
 		$current   = array_flip( $values );
-		$has_new   = ! empty( array_diff_key( $after, $before ) );
+		$new       = array_diff_key( $after, $before );
 		$leftovers = array_filter( $before, fn( array $s ): bool => ! isset( $current[ $s['value'] ] ) );
 
-		if ( ! $has_new || ! $leftovers || ! self::keeps_previous_translation() ) {
+		if ( ! $new || ! $leftovers || ! self::keeps_previous_translation() ) {
 			return;
 		}
 
@@ -325,9 +346,29 @@ class StringHandler implements SubscriberInterface {
 		}
 
 		global $wpdb;
+		$factory = new \WPML_ST_String_Factory( $wpdb );
+		$reused  = 0;
+
 		try {
-			( new \WPML_PB_Reuse_Translations( new \WPML_ST_String_Factory( $wpdb ) ) )
-				->find_and_reuse_translations( $before, $after, $leftovers );
+			( new \WPML_PB_Reuse_Translations( $factory ) )->find_and_reuse_translations( $before, $after, $leftovers );
+
+			$by_location = array();
+			foreach ( $leftovers as $leftover ) {
+				$by_location[ $leftover['location'] ][] = $leftover;
+			}
+
+			foreach ( $new as $string ) {
+				if ( ! isset( $by_location[ $string['location'] ] ) || $factory->find_by_id( $string['id'] )->get_translations() ) {
+					continue; // Nothing at that location, or WPML's pass already paired it.
+				}
+				foreach ( $by_location[ $string['location'] ] as $leftover ) {
+					if ( $this->is_same_text_edited( $leftover['value'], $string['value'] ) ) {
+						$this->copy_translations( $factory, $leftover['id'], $string['id'] );
+						$reused++;
+						break;
+					}
+				}
+			}
 		} catch ( \Throwable $e ) {
 			Logger::warning( 'WPML translation reuse failed', array(
 				'post_id' => $post_id,
@@ -337,10 +378,43 @@ class StringHandler implements SubscriberInterface {
 		}
 
 		Logger::debug( 'Reused translations for edited strings', array(
-			'post_id'   => $post_id,
-			'new'       => count( array_diff_key( $after, $before ) ),
-			'leftovers' => count( $leftovers ),
+			'post_id'            => $post_id,
+			'new'                => count( $new ),
+			'leftovers'          => count( $leftovers ),
+			'same_location_pass' => $reused,
 		) );
+	}
+
+	/** Whether $new is an edit of $old at the same location, per our own pass. */
+	private function is_same_text_edited( string $old, string $new ): bool {
+		if ( self::is_url_like( $old ) || self::is_url_like( $new ) ) {
+			return self::is_url_like( $old ) && self::is_url_like( $new );
+		}
+		similar_text( $old, $new, $percent );
+
+		return $percent >= self::REUSE_MIN_CHAR_SIMILARITY;
+	}
+
+	/**
+	 * Copy a string's translations to another string, completed ones demoted
+	 * to "needs update" — the same rule as WPML_PB_Reuse_Translations.
+	 */
+	private function copy_translations( \WPML_ST_String_Factory $factory, int $from_id, int $to_id ): void {
+		$to = $factory->find_by_id( $to_id );
+		foreach ( $factory->find_by_id( $from_id )->get_translations() as $translation ) {
+			if ( null === $translation->value || '' === $translation->value ) {
+				continue;
+			}
+			$status = (int) $translation->status === ICL_TM_COMPLETE ? ICL_TM_NEEDS_UPDATE : (int) $translation->status;
+			$to->set_translation(
+				$translation->language,
+				$translation->value,
+				$status,
+				$translation->translator_id,
+				$translation->translation_service,
+				$translation->batch_id
+			);
+		}
 	}
 
 	/**
@@ -349,7 +423,9 @@ class StringHandler implements SubscriberInterface {
 	 * Completed translations win. A string without one falls back to its
 	 * "needs update" translation — the previous wording carried over by
 	 * reuse — unless keeps_previous_translation() is off. Strings left with
-	 * neither are counted as pending (WPML's non-translatable values excluded).
+	 * neither are counted as pending, except values that are not visible text:
+	 * WPML's non-translatable values and link targets, which render as they
+	 * are in the original rather than holding the whole translated page.
 	 *
 	 * @return array{translations: array<string, string>, pending: int} Map of original => translated.
 	 */
@@ -377,7 +453,7 @@ class StringHandler implements SubscriberInterface {
 				|| ( $keep_previous && 3 === (int) $row->status && null !== $row->translated && '' !== $row->translated );
 
 			if ( ! $usable ) {
-				if ( ! self::is_not_translatable( (string) $row->original ) ) {
+				if ( ! self::is_not_translatable( (string) $row->original ) && ! self::is_url_like( (string) $row->original ) ) {
 					$pending++;
 				}
 				continue;

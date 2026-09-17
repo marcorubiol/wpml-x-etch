@@ -4,7 +4,7 @@ Tags: wpml, multilingual, etch, gutenberg, translation
 Requires at least: 6.5
 Tested up to: 6.9.4
 Requires PHP: 8.1
-Stable tag: 1.2.9
+Stable tag: 1.2.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,11 @@ If the content you translate contains personal data of third parties, ensure you
 Encrypted via WordPress's `wp_encrypt()` on WP 6.8+, or stored as-is in the `wp_options` table on older WP versions. Either way, the key is admin-only — non-admin users with the `translate` capability cannot read or modify it via the panel or REST API.
 
 == Changelog ==
+
+= 1.2.10 =
+* Improvement: short labels keep their previous translation when lightly edited. WPML's reuse pass compares whole words and needs more than 50% in common, so button labels and headings rarely qualified ("Jetzt bewerben" → "Jetzt bewerben!" scores 35.7%) and held the whole translated page instead. After WPML's pass, a second pass pairs a new text with the removed text at the same position when their characters are at least 60% alike (97% for that example, 70% for "Mehr erfahren" → "Mehr lesen"). Real rewrites stay below it ("Über uns" → "Unser Team", 32%) and still keep the page at its previous version until translated.
+* Improvement: changing a link target no longer holds the translated page. Link paths are registered as texts, and one path is never "similar" to another (/contact/ → /contact-new/ is 0% for WPML). A link that replaces another at the same position now keeps the previous translated link, marked "needs update". A link with no previous translation renders as it is in the original instead of blocking the page, since it is not visible text.
+* Fix: the resync stats counted a translation that kept its previous content (texts pending) as `translations_updated`. It is now reported as `translations_kept`.
 
 = 1.2.9 =
 * Fix: editing a text in the original made the translated page show the source language until the text was translated again. Visitors of the English page of a German site suddenly read German. Three things combined: a string's identity is the md5 of its value, so an edited text registers as a NEW string; saving the original then deleted the old string together with its translations; and the resync that runs after every Etch save (and Force Sync, and job completion) rebuilt the translated post from the original, writing untranslated strings in the source language. WPML never shows this with its own page-builder integrations, because it does not rebuild translated posts when the original is saved, and it carries translations over to edited texts.

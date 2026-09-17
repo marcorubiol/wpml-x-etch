@@ -90,6 +90,7 @@ class ResyncHandler {
 			'strings_registered'   => 0,
 			'components_processed' => 0,
 			'translations_updated' => 0,
+			'translations_kept'    => 0,
 			'up_to_date'           => 0,
 		);
 
@@ -136,7 +137,7 @@ class ResyncHandler {
 			$this->translation_sync->copy_etch_meta( $post_id, $translated_id );
 
 			// Apply Etch translations to content.
-			$this->content_handler->apply_etch_translations( $post_id, $translated_id, $lang_code );
+			$kept = $this->content_handler->apply_etch_translations( $post_id, $translated_id, $lang_code );
 
 			// Also apply translations for components.
 			foreach ( $post_ids_to_process as $pid ) {
@@ -150,7 +151,8 @@ class ResyncHandler {
 				}
 			}
 
-			$stats['translations_updated']++;
+			// A translation that kept its previous content (strings pending) was not updated.
+			$stats[ $kept ? 'translations_kept' : 'translations_updated' ]++;
 
 			// Auto-complete or force needs_update based on this post's own
 			// strings only. Strict per-post: components are reconciled
@@ -217,6 +219,7 @@ class ResyncHandler {
 				'strings_registered'   => 0,
 				'components_processed' => 0,
 				'translations_updated' => 0,
+				'translations_kept'    => 0,
 				'up_to_date'           => 0,
 				'errors'               => 0,
 				'duration_ms'          => 0,
@@ -238,6 +241,7 @@ class ResyncHandler {
 				$stats['strings_registered']   += (int) ( $result['stats']['strings_registered'] ?? 0 );
 				$stats['components_processed'] += (int) ( $result['stats']['components_processed'] ?? 0 );
 				$stats['translations_updated'] += (int) ( $result['stats']['translations_updated'] ?? 0 );
+				$stats['translations_kept']    += (int) ( $result['stats']['translations_kept'] ?? 0 );
 				$stats['up_to_date']           += (int) ( $result['stats']['up_to_date'] ?? 0 );
 			}
 

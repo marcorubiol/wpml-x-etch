@@ -76,11 +76,15 @@ retranslated. WPML's own integrations avoid this, and so do we now:
    ones to WPML's `WPML_PB_Reuse_Translations` — the same pass Gutenberg, Elementor and
    Beaver Builder run. It pairs a new string with a removed one (same location and >50%
    similar words, or similar words alone) and copies the translations with status
-   `ICL_TM_NEEDS_UPDATE` (3). Guarded by `class_exists` + `try/catch`: if WPML renames the
-   class, reuse is skipped and step 3 still protects visitors.
+   `ICL_TM_NEEDS_UPDATE` (3). A second pass of ours (v1.2.10) then pairs what WPML left
+   unpaired with the removed string at the same location when both are link targets
+   (`is_url_like()`) or their characters are ≥60% alike (`similar_text`) — WPML's word diff
+   misses short labels and paths. Guarded by `class_exists` + `try/catch`: if WPML renames
+   the classes, reuse is skipped and step 3 still protects visitors.
 2. **Fallback (application).** `StringHandler::get_package_translations()` returns completed
    translations, falling back to status-3 translations, and counts strings with neither as
-   pending. Used by `ContentTranslationHandler` and `TemplateTranslator` (prop defaults).
+   pending — except link targets and WPML's non-translatable values, which render as in the
+   original instead of holding the page. Used by `ContentTranslationHandler` and `TemplateTranslator` (prop defaults).
    Completeness checks (`is_translation_complete`, `has_untranslated_etch_strings`) still
    count only status 10, so the page stays `needs_update`.
 3. **Keep previous content (pending).** If strings are still pending, the translated post
@@ -250,7 +254,8 @@ resync, the user must open ATE and save with zero changes to clear the flag.
 ### REST endpoint
 
 `POST /wpml-x-etch/v1/resync` with `post_id` parameter. Returns stats:
-`{ success, stats: { strings_registered, components_processed, translations_updated, up_to_date } }`
+`{ success, stats: { strings_registered, components_processed, translations_updated, translations_kept, up_to_date } }`
+(`translations_kept`: translations that kept their previous content because strings are pending)
 
 ## Non-translatable string filtering
 

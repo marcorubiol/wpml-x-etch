@@ -120,12 +120,15 @@ class ContentTranslationHandler implements SubscriberInterface {
 
 	/**
 	 * Apply Etch translations to a single translated post's content.
+	 *
+	 * @return bool True when the translated post kept its previous content
+	 *              because strings are pending.
 	 */
-	public function apply_etch_translations( int $original_post_id, int $translated_post_id, string $lang ): void {
+	public function apply_etch_translations( int $original_post_id, int $translated_post_id, string $lang ): bool {
 		// Always rebuild from original — translated post may contain stale content.
 		$original_post = get_post( $original_post_id );
 		if ( ! $original_post ) {
-			return;
+			return false;
 		}
 
 		// Skip posts whose post_content has no Etch blocks (e.g. Classic Editor or
@@ -133,7 +136,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 		// Without this guard, the always-write below overwrites WPML's translated
 		// post_content with the original, undoing the translation.
 		if ( ! str_contains( $original_post->post_content, '<!-- wp:etch/' ) ) {
-			return;
+			return false;
 		}
 
 		[ 'translations' => $translations, 'pending' => $pending ] = StringHandler::get_package_translations( $original_post_id, $lang );
@@ -151,6 +154,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 		$blocks         = $this->replace_translations_in_blocks( $blocks, $translations );
 		$content        = serialize_blocks( $blocks );
 
+		$kept = false;
 		if ( $pending > 0 && StringHandler::keeps_previous_translation() ) {
 			$previous = $this->get_previous_translation( $translated_post_id, $original_post->post_content, $source_content );
 			if ( null !== $previous ) {
@@ -161,6 +165,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 					'pending'            => $pending,
 				) );
 				$content = $previous;
+				$kept    = true;
 			}
 		}
 
@@ -194,7 +199,7 @@ class ContentTranslationHandler implements SubscriberInterface {
 				'original_post_id'   => $original_post_id,
 				'error'              => $result->get_error_message(),
 			) );
-			return;
+			return false;
 		}
 
 		// What this request wrote is now the translation to keep if a later
@@ -207,6 +212,8 @@ class ContentTranslationHandler implements SubscriberInterface {
 			'lang'               => $lang,
 			'translation_count'  => count( $translations ),
 		) );
+
+		return $kept;
 	}
 
 	/**
